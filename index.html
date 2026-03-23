@@ -807,6 +807,7 @@
                             </label>
 
                             <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
                                     <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Live Web Search (Grounding)</span>
                                     <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">ALLOW AI TO SURF THE WEB FOR LIVE DATA (GEMINI ONLY).</span>
                                 </div>
@@ -976,7 +977,7 @@
                     if (!state.enableSound || !('speechSynthesis' in window)) return;
                     window.speechSynthesis.cancel();
                     
-                    const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+                    const cleanText = text.replace(/<[^>]*>/gm, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
                     const utterance = new SpeechSynthesisUtterance(cleanText);
                     
                     let availableVoices = window.speechSynthesis.getVoices();
@@ -1201,6 +1202,35 @@
                 state.biometricsEnabled = false; state.webAuthnId = null; saveData(); el('biometric-status-text').innerHTML = 'MAP TOUCHID/WINDOWS HELLO TO MATRIX.'; el('register-biometrics-btn').classList.remove('hidden'); el('remove-biometrics-btn').classList.add('hidden'); showToast("Biometrics Removed.", "info"); if (state.enableSound) playSound('disconnect');
             });
 
+            // BACKUP & RESTORE SYSTEM
+            safeBind('export-settings-btn', 'click', () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href",     dataStr);
+                downloadAnchorNode.setAttribute("download", "compass_os_backup.json");
+                document.body.appendChild(downloadAnchorNode); 
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                if (state.enableSound) playSound('connect');
+                showToast("Encrypted Backup Downloaded", "info");
+            });
+
+            safeBind('import-settings-file', 'change', (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const importedState = JSON.parse(ev.target.result);
+                        Object.assign(state, importedState);
+                        saveData(); loadData();
+                        if (state.enableSound) playSound('connect');
+                        showToast("System Restored. Rebooting...", "info");
+                        setTimeout(() => window.location.reload(), 1500);
+                    } catch (err) { showToast("Invalid Matrix Backup File", "error"); if (state.enableSound) playSound('disconnect'); }
+                };
+                reader.readAsText(file);
+            });
+
             safeBind('biometric-unlock-btn', 'click', async () => {
                 if(!state.biometricsEnabled || !window.PublicKeyCredential) { showToast("Biometrics not enrolled. Use PIN.", "error"); return; }
                 try { const credential = await navigator.credentials.get({ publicKey: { challenge: new Uint8Array(32), timeout: 60000 } }); if (credential) { initAudio(); playSound('connect'); el('lock-screen').classList.add('hidden'); runCyphers(); dailyBriefing(true); } } 
@@ -1222,8 +1252,11 @@
                 state.activePage = pageId; runCyphers(); if(pageId === 'nexus') setTimeout(renderNexusHeatmap, 50);
             };
             document.querySelectorAll('.sidebar-nav-item').forEach(l => { l.addEventListener('click', e => { e.preventDefault(); playSound('click'); switchPage(l.dataset.page); }); });
+            
+            // MOBILE NAVIGATION BINDINGS
             window.toggleMobileNav = () => { const nav = el('sidebar'), ov = el('mobile-overlay'); if(nav && ov) { nav.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); } };
             safeBind('mobile-menu-close-btn', 'click', window.toggleMobileNav);
+            safeBind('mobile-menu-btn', 'click', window.toggleMobileNav);
             
             window.toggleCmdPalette = () => { const p = el('cmd-palette'), i = el('cmd-input'); if(p) { p.classList.toggle('opacity-0'); p.classList.toggle('pointer-events-none'); if(!p.classList.contains('opacity-0') && i) { i.value = ''; setTimeout(()=>i.focus(), 100); } } };
             safeBind('sidebar-cmd-btn', 'click', window.toggleCmdPalette);
@@ -1250,7 +1283,7 @@
                             const aiPromise = callAI(`Generate a single, short, punchy, futuristic, and highly motivational system boot quote for an advanced AI OS. Less than 10 words. Time of day context: ${t}. No quotes, no markdown, just the text.`, "You are a futuristic OS.");
                             const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2500));
                             const rawRes = await Promise.race([aiPromise, timeoutPromise]);
-                            cleanRes = rawRes.replace(/<[^>]*>?/gm, '').replace(/["']/g, '').trim();
+                            cleanRes = rawRes.replace(/<[^>]*>/gm, '').replace(/["']/g, '').trim();
                             if(cleanRes.includes("[LOCAL SYNTHESIS]") || cleanRes.includes("SYSTEM OFFLINE") || cleanRes.length > 80) throw new Error("Fallback");
                         } else { throw new Error("Use Dictionary"); }
                     } catch(e) {
@@ -1268,6 +1301,18 @@
             }
             safeBind('read-briefing-btn', 'click', () => { if (state.currentBriefing) VoiceEngine.speak(state.currentBriefing); });
             safeBind('refresh-briefing-btn', 'click', () => { dailyBriefing(true); });
+
+            // DASHBOARD TRACKER BINDINGS
+            safeBind('get-auspicious-timings-btn', 'click', () => {
+                const btn = el('get-auspicious-timings-btn'); const orig = btn.innerText;
+                btn.innerText = 'CALCULATING...'; if (state.enableSound) playSound('click');
+                setTimeout(() => { btn.innerText = orig; showToast("Matrix synchronizing...", "info"); }, 1000);
+            });
+            safeBind('get-gold-rates-btn', 'click', () => {
+                const btn = el('get-gold-rates-btn'); const orig = btn.innerText;
+                btn.innerText = 'FETCHING...'; if (state.enableSound) playSound('click');
+                setTimeout(() => { btn.innerText = orig; showToast("Market data requested...", "info"); }, 1000);
+            });
 
             function updateClock() {
                 const now = new Date(); const dEl = el('current-date'); 
@@ -1558,13 +1603,13 @@
                 try {
                     el('swarm-out-data').innerText = 'Synthesizing...';
                     const r1 = await callAI(d, "Research Node. Extremely brief. Use plain text without markdown.");
-                    await typeWriter(el('swarm-out-data'), r1.replace(/<[^>]*>?/gm, ''));
+                    await typeWriter(el('swarm-out-data'), r1.replace(/<[^>]*>/gm, ''));
                     el('swarm-out-sec').innerText = 'Analyzing...';
                     const r2 = await callAI(d, "Strategy Node. Focus on logic. Use plain text without markdown.");
-                    await typeWriter(el('swarm-out-sec'), r2.replace(/<[^>]*>?/gm, ''));
+                    await typeWriter(el('swarm-out-sec'), r2.replace(/<[^>]*>/gm, ''));
                     el('swarm-out-ops').innerText = 'Drafting...';
                     const r3 = await callAI(d, "Execution Node. Give a 3 step plan. Use plain text without markdown.");
-                    await typeWriter(el('swarm-out-ops'), r3.replace(/<[^>]*>?/gm, ''));
+                    await typeWriter(el('swarm-out-ops'), r3.replace(/<[^>]*>/gm, ''));
                     showToast("Swarm Execution Complete");
                 } catch(e) { ['data','sec','ops'].forEach(n => el(`swarm-out-${n}`).innerHTML = renderAIErrorUI("Node Offline", e.message)); }
             });
@@ -1599,8 +1644,8 @@
                 }
             });
 
-            safeBind('enhance-image-prompt', 'click', async () => { const inp = el('image-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this image generation prompt to be highly detailed, descriptive, and visually striking. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>?/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
-            safeBind('enhance-video-prompt', 'click', async () => { const inp = el('video-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this cinematic video prompt to specify camera movement, lighting, and mood. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>?/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
+            safeBind('enhance-image-prompt', 'click', async () => { const inp = el('image-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this image generation prompt to be highly detailed, descriptive, and visually striking. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
+            safeBind('enhance-video-prompt', 'click', async () => { const inp = el('video-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this cinematic video prompt to specify camera movement, lighting, and mood. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
 
             function showImageError(msg) {
                 const l = el('image-loader'), ph = el('image-placeholder'), errTitle = el('image-error-title'), errDesc = el('image-error-desc'), icon = el('image-placeholder-icon');
