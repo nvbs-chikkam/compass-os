@@ -181,7 +181,7 @@
                 <i class="ph-bold ph-fingerprint text-3xl text-[var(--accent)] animate-pulse pointer-events-none"></i>
             </div>
             <h2 class="text-xl font-black uppercase tracking-[0.3em] text-[var(--text-main)] mb-2 cypher-text">System Locked</h2>
-            <p class="text-[10px] text-[var(--text-dim)] mb-8 uppercase tracking-widest cypher-text">Awaiting Authentication</p>
+            <p class="text-[10px] text-[var(--text-dim)] mb-8 uppercase tracking-widest cypher-text">Awaiting Authentication (Default PIN: 0000)</p>
             <input type="password" id="passcode-input" class="w-full bg-black/50 border-2 border-[var(--border)] rounded-xl p-4 text-center text-2xl tracking-[1em] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors mb-6 shadow-inner" placeholder="••••" maxlength="8">
             <button id="unlock-btn" class="w-full bg-black/40 border border-[var(--border)] hover:bg-[var(--accent)] hover:text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-sm focus:outline-none focus:scale-105">Authenticate PIN</button>
             <p id="lock-error" class="text-rose-500 text-[10px] font-bold uppercase tracking-widest mt-4 opacity-0 transition-opacity">Invalid Signature</p>
@@ -931,7 +931,7 @@
             // STATE MANAGEMENT
             let state = { 
                 activePage: 'dashboard', tasks: [], selectedTaskId: null, imageStyle: 'photorealistic', aspectRatio: '1:1',
-                themeMode: 'dark', bgStyle: 'radial', timeFormat: '12', enableSound: true, requireAuth: true, enableCursor: false, 
+                themeMode: 'dark', bgStyle: 'radial', timeFormat: '12', enableSound: true, requireAuth: false, enableCursor: false, 
                 enableParallax: true, enableNeural: true, enableOrb: false, enableWebGrounding: true, uiSpeed: '0.3s', glassIntensity: '10px', forceOffline: false,
                 userName: '', userApiKey: '', apiProvider: 'gemini', okrs: [], nexusData: Array.from({length: 364}, () => 0), 
                 lastLoginDate: new Date().toDateString(), currentBriefing: '',
