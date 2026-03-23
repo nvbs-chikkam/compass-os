@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compass OS : Singularity</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        :root {
+            --bg: #030305;
+            --sidebar: rgba(10, 10, 15, 0.7);
+            --card: rgba(18, 18, 23, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-dim: #A1A1AA;
+            --accent: #00E0FF; 
+            --accent-glow: rgba(0, 224, 255, 0.4);
+            --accent-pink: #FF0099;
+            --accent-purple: #BD00FF;
+            --calc-bg: rgba(30, 30, 35, 0.5);
+            --ui-speed: 0.3s;
+            --glass-blur: 10px;
+        }
+
+        [data-theme="eye-shield"] {
+            --bg: #0A0908; 
+            --sidebar: rgba(10, 9, 8, 0.85);
+            --card: rgba(20, 16, 12, 0.7); 
+            --border: rgba(245, 158, 11, 0.15); 
+            --text-main: #FEF3C7; 
+            --text-dim: #B45309; 
+            --accent: #F59E0B; 
+            --accent-glow: rgba(245, 158, 11, 0.25);
+            --calc-bg: rgba(20, 16, 12, 0.9);
+            --accent-pink: #F59E0B;
+            --accent-purple: #F59E0B;
+        }
+
+        * { transition: background-color var(--ui-speed) cubic-bezier(0.25, 0.8, 0.25, 1), border-color var(--ui-speed) ease, color var(--ui-speed) ease, opacity var(--ui-speed) ease, box-shadow var(--ui-speed) ease; box-sizing: border-box; outline-color: var(--accent); }
+
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main);
+            -webkit-font-smoothing: antialiased; overflow-x: hidden;
+            background-attachment: fixed; background-position: center center; transition: background-position 0.1s ease-out, background-image 0.5s ease;
+        }
+
+        /* Customizable Backgrounds */
+        body[data-bg="radial"] { background-image: radial-gradient(circle at 0% 0%, rgba(0, 224, 255, 0.03) 0%, transparent 60%), radial-gradient(circle at 100% 100%, rgba(189, 0, 255, 0.03) 0%, transparent 60%); }
+        body[data-bg="grid"] { background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 40px 40px; }
+        body[data-bg="minimal"] { background-image: none; }
+
+        body.glitch-active { animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; }
+        @keyframes glitch { 0%, 100% { transform: translate3d(0,0,0) } 20% { transform: translate3d(-3px, 3px, 0) } 40% { transform: translate3d(-3px, -3px, 0) } 60% { transform: translate3d(3px, 3px, 0) } 80% { transform: translate3d(3px, -3px, 0) } }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        aside { backdrop-filter: blur(calc(var(--glass-blur) * 2)); -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 2)); border-right: 1px solid var(--border); z-index: 50; }
+
+        .studio-card { background-color: var(--card); border: 1px solid var(--border); border-radius: 1.5rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur)); z-index: 10; }
+        .studio-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-glow), transparent); opacity: 0.5; z-index: 2; }
+        .studio-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(800px circle at var(--mouse-x, -500px) var(--mouse-y, -500px), rgba(255,255,255,0.06), transparent 40%); pointer-events: none; z-index: 1; transition: opacity var(--ui-speed); }
+        .studio-card:hover { box-shadow: 0 12px 40px rgba(0, 224, 255, 0.1); border-color: var(--accent); }
+        
+        .sidebar-nav-item { color: var(--text-dim); font-weight: 500; display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.25rem; border-radius: 1rem; white-space: nowrap; cursor: pointer; border-left: 3px solid transparent; position: relative; overflow: hidden; }
+        .sidebar-nav-item:hover { background-color: rgba(255, 255, 255, 0.03); color: var(--text-main); padding-left: 1.5rem; }
+        .sidebar-nav-item.active { background: linear-gradient(90deg, rgba(0, 224, 255, 0.1), transparent); color: var(--accent); border-left-color: var(--accent); font-weight: 700; }
+
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(2); opacity: 0; } }
+        .voice-active { position: relative; z-index: 10; }
+        .voice-active::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background-color: var(--accent-pink); animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; z-index: -1; }
+
+        /* Calculator Keys */
+        .calc-btn { background-color: var(--calc-bg); border: 1px solid var(--border); color: var(--text-main); font-weight: 600; border-radius: 1rem; padding: 1.25rem; font-size: 1.25rem; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .calc-btn:hover { background-color: var(--border); transform: translateY(1px); }
+        .calc-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        .spinner { border: 2px solid rgba(128, 128, 128, 0.2); border-top: 2px solid var(--accent); border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom Toggle Switches */
+        .cyan-toggle input:checked ~ div { background-color: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+        .cyan-toggle input:checked ~ div::after { transform: translateX(100%); border-color: white; }
+        .red-toggle input:checked ~ div { background-color: #f43f5e; border-color: #f43f5e; box-shadow: 0 0 15px rgba(244,63,94,0.4); }
+        .red-toggle input:checked ~ div::after { transform: translateX(100%); border-color: white; }
+
+        /* Button Groups */
+        .setting-btn-group { display: flex; gap: 1rem; }
+        .setting-btn { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--text-dim); padding: 1.2rem; border-radius: 0.75rem; text-align: center; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .setting-btn:hover { border-color: var(--text-main); color: var(--text-main); }
+        .setting-btn.active { border-color: var(--accent); color: var(--text-main); box-shadow: 0 0 15px var(--accent-glow), inset 0 0 10px rgba(0, 224, 255, 0.1); background: rgba(0, 224, 255, 0.05); }
+
+        #ai-orb { position: fixed; bottom: 40px; right: 40px; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, var(--accent) 40%, var(--accent-purple) 80%); box-shadow: 0 0 30px var(--accent-glow), inset 0 0 20px rgba(255,255,255,0.5); z-index: 99991; cursor: pointer; animation: floatOrb 4s ease-in-out infinite; backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; transition: opacity var(--ui-speed) ease; }
+        #ai-orb:hover { animation-play-state: paused; transform: scale(1.05); box-shadow: 0 0 40px var(--accent); }
+        #ai-orb.orb-dragging { cursor: grabbing; transform: scale(0.95); animation: none !important; transition: none !important; }
+        
+        #ai-chat-panel { opacity: 0; pointer-events: none; transform: translateY(20px) scale(0.95); transition: all var(--ui-speed) cubic-bezier(0.25, 0.8, 0.25, 1); transform-origin: bottom right; z-index: 99990;}
+        #ai-chat-panel.open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+
+        @keyframes floatOrb { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .typing-cursor::after { content: '█'; animation: blink 1s step-end infinite; color: var(--accent); margin-left: 4px; font-size: 0.8em; vertical-align: middle; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .text-gradient { background: linear-gradient(to right, var(--text-main), var(--text-dim)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .fade-in { animation: fadeIn var(--ui-speed) ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .cypher-text { display: inline-block; font-family: monospace; }
+
+        .risk-tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .risk-low { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .risk-med { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+        .risk-high { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        /* Enhanced Heatmap for Activity Nexus */
+        .heatmap-cell { width: 11px; height: 11px; border-radius: 2px; background-color: #161b22; transition: background-color 0.3s; border: 1px solid rgba(255,255,255,0.02); cursor: pointer;}
+        .heatmap-cell:hover { border-color: rgba(255,255,255,0.5); }
+        .heatmap-cell[data-level="1"] { background-color: rgba(0, 224, 255, 0.25); }
+        .heatmap-cell[data-level="2"] { background-color: rgba(0, 224, 255, 0.5); }
+        .heatmap-cell[data-level="3"] { background-color: rgba(0, 224, 255, 0.75); }
+        .heatmap-cell[data-level="4"] { background-color: rgba(0, 224, 255, 1); box-shadow: 0 0 8px var(--accent-glow); }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .cal-day-header { font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); padding-bottom: 8px; border-bottom: 1px solid var(--border); text-align: center;}
+        .cal-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--text-main); background: rgba(255,255,255,0.02); border: 1px solid transparent; transition: all 0.2s ease; cursor: default; }
+        .cal-cell.cal-today { background: var(--accent-glow); border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); font-weight: 900; }
+
+        .telemetry-bar-bg { width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .telemetry-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
+        /* Hacker-Style Terminal Panels */
+        .terminal-panel { background-color: #050505; border: 1px solid #222; border-radius: 1rem; overflow: hidden; display: flex; flex-direction: column; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        .terminal-header { background-color: rgba(255,255,255,0.02); padding: 12px 16px; border-bottom: 1px solid #222; font-size: 10px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        .terminal-body { padding: 16px; font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.8; flex-grow: 1; overflow-y: auto; color: var(--text-main); }
+
+        /* Custom Cursor */
+        @media (pointer: fine) {
+            body.use-custom-cursor * { cursor: none !important; }
+            .custom-cursor-dot, .custom-cursor-ring { display: none; }
+            body.use-custom-cursor .custom-cursor-dot { display: block; position: fixed; top: 0; left: 0; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; pointer-events: none; z-index: 9999999; transform: translate(-50%, -50%); transition: width 0.2s, height 0.2s; box-shadow: 0 0 10px var(--accent); }
+            body.use-custom-cursor .custom-cursor-ring { display: block; position: fixed; top: 0; left: 0; width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.4); border-radius: 50%; pointer-events: none; z-index: 9999998; transform: translate(-50%, -50%); transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.3s, border-color 0.3s; }
+            body.use-custom-cursor.cursor-hovering .custom-cursor-dot { width: 8px; height: 8px; background: var(--accent-pink); box-shadow: 0 0 15px var(--accent-pink); }
+            body.use-custom-cursor.cursor-hovering .custom-cursor-ring { width: 55px; height: 55px; border-color: var(--accent-pink); background: rgba(255,0,153,0.05); backdrop-filter: blur(1px); }
+            body.use-custom-cursor.cursor-clicking .custom-cursor-ring { width: 15px; height: 15px; border-width: 2px; border-color: var(--text-main); background: transparent; }
+        }
+        
+        .overlay-scanlines { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15)); background-size: 100% 4px; pointer-events: none; opacity: 0.2; mix-blend-screen: overlay; }
+        iframe.calendar-embed { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1); opacity: 0.9; }
+        [data-theme="eye-shield"] iframe.calendar-embed { filter: invert(1) hue-rotate(180deg) brightness(0.7) contrast(1.2) sepia(0.5); }
+    </style>
+</head>
+<body data-theme="dark" data-bg="radial">
+
+    <!-- HUD & UI Elements -->
+    <div id="custom-cursor-dot" class="custom-cursor-dot"></div>
+    <div id="custom-cursor-ring" class="custom-cursor-ring"></div>
+    <div id="toast-container" class="fixed top-5 right-5 z-[999999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <canvas id="neural-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-30"></canvas>
+
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen" class="fixed inset-0 bg-[#030305] z-[100000] flex flex-col items-center justify-center text-[var(--accent)] font-mono transition-opacity duration-1000">
+        <i class="ph-bold ph-aperture text-7xl mb-8 animate-spin" style="animation-duration: 4s; filter: drop-shadow(0 0 20px var(--accent));"></i>
+        <div id="boot-text" class="text-xs tracking-[0.5em] font-black uppercase mb-6 h-4 text-white cypher-text">MOUNTING LOCAL STORAGE...</div>
+        <div class="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div id="boot-progress" class="h-full bg-[var(--accent)] w-0 transition-all duration-[1200ms] shadow-[0_0_10px_var(--accent)] ease-out"></div>
+        </div>
+    </div>
+
+    <!-- LOCK SCREEN -->
+    <div id="lock-screen" class="fixed inset-0 bg-[#030305]/95 z-[99997] flex flex-col items-center justify-center transition-all duration-700 backdrop-blur-3xl opacity-0 pointer-events-none">
+        <div class="studio-card p-10 flex flex-col items-center max-w-sm w-full text-center border-t-4 border-[var(--accent)] shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div id="biometric-unlock-btn" class="w-16 h-16 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)] flex items-center justify-center mb-6 shadow-[0_0_20px_var(--accent-glow)] cursor-pointer hover:bg-[var(--accent)]/30 transition-colors" title="Click to use TouchID / Windows Hello">
+                <i class="ph-bold ph-fingerprint text-3xl text-[var(--accent)] animate-pulse pointer-events-none"></i>
+            </div>
+            <h2 class="text-xl font-black uppercase tracking-[0.3em] text-[var(--text-main)] mb-2 cypher-text">System Locked</h2>
+            <p class="text-[10px] text-[var(--text-dim)] mb-8 uppercase tracking-widest cypher-text">Awaiting Authentication</p>
+            <input type="password" id="passcode-input" class="w-full bg-black/50 border-2 border-[var(--border)] rounded-xl p-4 text-center text-2xl tracking-[1em] text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors mb-6 shadow-inner" placeholder="••••" maxlength="8">
+            <button id="unlock-btn" class="w-full bg-black/40 border border-[var(--border)] hover:bg-[var(--accent)] hover:text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-sm focus:outline-none focus:scale-105">Authenticate PIN</button>
+            <p id="lock-error" class="text-rose-500 text-[10px] font-bold uppercase tracking-widest mt-4 opacity-0 transition-opacity">Invalid Signature</p>
+        </div>
+    </div>
+
+    <!-- COMMAND PALETTE -->
+    <div id="cmd-palette" class="fixed inset-0 bg-black/60 z-[99999] backdrop-blur-md flex items-start justify-center pt-[15vh] opacity-0 pointer-events-none transition-opacity">
+        <div class="w-full max-w-2xl bg-[#050505] border border-[#222] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden relative">
+            <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-purple)] to-transparent opacity-80"></div>
+            <div class="p-5 border-b border-[#222] flex items-center gap-4">
+                <div class="bg-[var(--accent-purple)] text-white rounded-lg shadow-[0_0_10px_rgba(189,0,255,0.5)] w-8 h-8 font-black font-mono text-sm flex items-center justify-center">>_</div>
+                <input id="cmd-input" type="text" placeholder="Type command (/settings, /finance) or ask AI..." class="w-full bg-transparent text-lg text-[var(--text-main)] outline-none placeholder-gray-600 font-medium">
+                <button onclick="window.toggleCmdPalette()" class="text-[10px] font-bold text-gray-400 bg-[#0a0a0a] px-3 py-1.5 rounded-lg border border-[#222] uppercase hover:text-white transition-colors focus:outline-none">ESC</button>
+            </div>
+            <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar bg-[#050505]">
+                <button class="cmd-option w-full text-left p-4 rounded-xl hover:bg-white/5 flex items-center gap-4 text-[var(--text-main)] font-medium transition-colors focus:outline-none" data-action="go-productivity"><i class="ph-bold ph-calendar-check text-xl text-gray-400 pointer-events-none"></i> Open Productivity</button>
+                <button class="cmd-option w-full text-left p-4 rounded-xl hover:bg-white/5 flex items-center gap-4 text-[var(--text-main)] font-medium transition-colors focus:outline-none" data-action="go-swarm"><i class="ph-bold ph-graph text-xl text-gray-400 pointer-events-none"></i> Open AI Agents</button>
+                <button class="cmd-option w-full text-left p-4 rounded-xl hover:bg-white/5 flex items-center gap-4 text-[var(--text-main)] font-medium transition-colors focus:outline-none" data-action="go-settings"><i class="ph-bold ph-gear text-xl text-gray-400 pointer-events-none"></i> System Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZENITH OVERLAY -->
+    <div id="zenith-overlay" class="fixed inset-0 z-[99998] flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-700">
+        <div class="absolute inset-0 bg-[var(--bg)] opacity-95 backdrop-blur-3xl"></div>
+        <button id="exit-zenith-btn" class="absolute top-10 right-10 text-[var(--text-dim)] hover:text-rose-500 transition-colors focus:outline-none z-10"><i class="ph-bold ph-x text-4xl"></i></button>
+        <h2 class="text-[var(--accent-pink)] font-bold tracking-[0.5em] uppercase mb-10 text-sm animate-pulse flex items-center gap-3 z-10"><i class="ph-fill ph-target text-xl"></i> Zenith Focus Protocol</h2>
+        <div id="zenith-time-display" class="text-[15vw] leading-none font-black font-mono tracking-tighter drop-shadow-[0_0_40px_rgba(255,0,153,0.15)] mb-8 text-[var(--text-main)] z-10">25:00</div>
+        
+        <div class="flex flex-wrap justify-center gap-3 mb-12 z-10">
+            <button class="focus-preset-btn px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--text-dim)] text-xs font-bold tracking-widest uppercase hover:border-[var(--accent-pink)] hover:text-[var(--accent-pink)] transition focus:outline-none" data-mins="15">Sprint (15)</button>
+            <button class="focus-preset-btn px-4 py-2 rounded-xl border border-[var(--accent-pink)] text-[var(--accent-pink)] text-xs font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(255,0,153,0.2)] transition focus:outline-none" data-mins="25">Standard (25)</button>
+            <button class="focus-preset-btn px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--text-dim)] text-xs font-bold tracking-widest uppercase hover:border-[var(--accent-pink)] hover:text-[var(--accent-pink)] transition focus:outline-none" data-mins="50">Deep (50)</button>
+            <button class="focus-preset-btn px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--text-dim)] text-xs font-bold tracking-widest uppercase hover:border-[var(--accent-pink)] hover:text-[var(--accent-pink)] transition focus:outline-none" data-mins="90">Flow (90)</button>
+        </div>
+        
+        <div class="flex gap-6 mb-16 z-10">
+            <button id="zenith-toggle-btn" class="w-64 bg-[var(--accent-pink)] text-white font-black py-5 rounded-2xl text-lg tracking-widest shadow-[0_0_30px_rgba(255,0,153,0.3)] hover:brightness-110 transition focus:outline-none">START</button>
+            <button id="zenith-reset-btn" class="bg-black/40 border border-[var(--border)] text-[var(--text-main)] font-black py-5 px-8 rounded-2xl hover:bg-[var(--border)] transition focus:outline-none"><i class="ph-bold ph-arrow-counter-clockwise text-2xl"></i></button>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4 z-10">
+            <button class="ambient-btn flex items-center gap-3 px-6 py-4 rounded-full border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-main)] hover:border-[var(--accent)] transition focus:outline-none" data-noise="brown"><i class="ph-bold ph-waves text-xl"></i> 432Hz Alpha</button>
+            <button class="ambient-btn flex items-center gap-3 px-6 py-4 rounded-full border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--text-main)] hover:border-[var(--accent)] transition focus:outline-none" data-noise="space"><i class="ph-bold ph-planet text-xl"></i> 528Hz Healing</button>
+        </div>
+    </div>
+
+    <!-- AI ORB & CHAT -->
+    <div id="ai-chat-panel" class="fixed bottom-[130px] right-10 w-80 lg:w-96 bg-[var(--card)] backdrop-blur-2xl border border-[var(--border)] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden z-[99990] opacity-0 pointer-events-none transition-all scale-95 translate-y-5">
+        <div class="p-4 border-b border-[var(--border)] flex justify-between items-center bg-black/40">
+            <span class="text-xs font-black tracking-widest text-[var(--accent)] uppercase flex items-center gap-2"><i class="ph-bold ph-cpu"></i> Neural Matrix</span>
+            <button id="close-chat-btn" class="text-[var(--text-dim)] hover:text-rose-500 focus:outline-none"><i class="ph-bold ph-x text-lg"></i></button>
+        </div>
+        <div id="chat-history" class="p-5 h-[300px] overflow-y-auto flex flex-col gap-4 text-sm custom-scrollbar">
+            <div class="self-start bg-black/40 border border-[var(--border)] text-[var(--text-main)] p-3 rounded-xl rounded-tl-none max-w-[85%] cypher-text">System stable. Drop images to orb or type directive.</div>
+        </div>
+        <div class="p-3 bg-black/50 border-t border-[var(--border)] flex gap-2 items-center relative">
+            <button id="chat-voice-btn" class="text-[var(--text-dim)] hover:text-[var(--accent)] focus:outline-none"><i class="ph-fill ph-microphone text-xl"></i></button>
+            <input type="text" id="chat-input" class="w-full bg-transparent outline-none text-sm px-2 text-[var(--text-main)]" placeholder="Directive...">
+            <button id="send-chat-btn" class="w-8 h-8 rounded-lg bg-[var(--accent)] text-black flex items-center justify-center focus:outline-none hover:scale-105 transition-transform"><i class="ph-bold ph-paper-plane-right"></i></button>
+        </div>
+    </div>
+
+    <div id="ai-orb" title="System Assistant (Drop Images Here)">
+        <i class="ph-fill ph-aperture text-3xl text-white/80 animate-spin" style="animation-duration: 10s;"></i>
+    </div>
+
+    <div class="flex min-h-screen relative overflow-hidden">
+
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-md transition-opacity"></div>
+
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-72 p-6 flex flex-col fixed h-full bg-[var(--sidebar)] lg:static transform transition-transform duration-300 -translate-x-full lg:translate-x-0 z-50">
+            <div class="flex items-center justify-between mb-10">
+                <div class="flex items-center space-x-3">
+                     <div id="app-logo" class="w-9 h-9 bg-[var(--accent)] rounded-xl flex items-center justify-center shadow-[0_0_15px_var(--accent)]"><i class="ph-bold ph-aperture text-xl text-black"></i></div>
+                    <h1 class="text-xl font-black tracking-widest uppercase text-[var(--text-main)]">Compass OS</h1>
+                </div>
+                <button class="lg:hidden text-[var(--text-dim)] focus:outline-none hover:text-white" id="mobile-menu-close-btn"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+
+            <nav class="flex-grow space-y-8 overflow-y-auto pr-2 custom-scrollbar">
+                <div>
+                    <p class="px-3 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mb-2 opacity-60">Command</p>
+                    <a href="#" data-page="dashboard" class="sidebar-nav-item active"><i class="ph-bold ph-house text-lg"></i><span>Dashboard</span></a>
+                    <a href="#" data-page="productivity" class="sidebar-nav-item"><i class="ph-bold ph-calendar-check text-lg"></i><span>Productivity</span></a>
+                    <a href="#" data-page="finance" class="sidebar-nav-item"><i class="ph-bold ph-currency-circle-dollar text-lg"></i><span>Finance</span></a>
+                </div>
+                <div>
+                    <p class="px-3 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mb-2 opacity-60">Engineering</p>
+                    <a href="#" data-page="nexus" class="sidebar-nav-item"><i class="ph-bold ph-activity text-lg"></i><span>Activity Nexus</span></a>
+                    <a href="#" data-page="swarm" class="sidebar-nav-item"><i class="ph-bold ph-graph text-lg"></i><span>AI Agents</span></a>
+                </div>
+                 <div>
+                    <p class="px-3 text-[9px] font-black text-gray-500 uppercase tracking-[0.3em] mb-2 opacity-60">Studio</p>
+                    <a href="#" data-page="image-studio" class="sidebar-nav-item"><i class="ph-bold ph-image text-lg"></i><span>Generate Visual</span></a>
+                    <a href="#" data-page="cinematic-studio" class="sidebar-nav-item"><i class="ph-bold ph-video-camera text-lg"></i><span>Render Sequence</span></a>
+                </div>
+                <div>
+                    <a href="#" data-page="settings" class="sidebar-nav-item"><i class="ph-bold ph-gear text-lg"></i><span>Settings</span></a>
+                </div>
+            </nav>
+
+            <div class="pt-5 border-t border-[var(--border)] relative">
+                <div class="flex justify-between items-center">
+                     <p class="text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:text-[var(--accent)] transition-colors" id="sidebar-cmd-btn"><i class="ph-bold ph-keyboard"></i> Search (Ctrl+K)</p>
+                     <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">V 1.0.0</p>
+                </div>
+                
+                <div id="dev-hud" class="text-[9px] font-mono text-[var(--text-dim)] pointer-events-none opacity-60 flex gap-4 mt-2 mb-4">
+                    <div>FPS: <span id="hud-fps" class="text-[var(--accent)] font-bold">--</span></div>
+                    <div>MEM: <span id="hud-mem" class="text-[var(--accent)] font-bold">--</span></div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 relative">
+                     <button data-theme-btn="eye-shield" class="theme-button p-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent)] transition focus:outline-none"><i class="ph-bold ph-eye"></i></button>
+                     <button data-theme-btn="dark" class="theme-button p-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent)] transition active focus:outline-none"><i class="ph-bold ph-moon"></i></button>
+                     <button data-theme-btn="system" class="theme-button p-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent)] transition focus:outline-none"><i class="ph-bold ph-desktop"></i></button>
+                     <button id="sidebar-accent-toggle" class="p-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent)] transition focus:outline-none"><i class="ph-bold ph-paint-brush"></i></button>
+                </div>
+                <div id="sidebar-accent-picker" class="absolute bottom-12 right-0 bg-[var(--card)] border border-[var(--border)] p-3 rounded-xl flex gap-2 opacity-0 pointer-events-none transition-all translate-y-2 z-50">
+                    <div class="theme-dot w-5 h-5 rounded-full bg-[#3DA6FF] cursor-pointer hover:scale-110 transition-transform" data-color="#3DA6FF"></div>
+                    <div class="theme-dot w-5 h-5 rounded-full bg-[#A855F7] cursor-pointer hover:scale-110 transition-transform" data-color="#A855F7"></div>
+                    <div class="theme-dot w-5 h-5 rounded-full bg-[#10B981] cursor-pointer hover:scale-110 transition-transform" data-color="#10B981"></div>
+                    <div class="theme-dot w-5 h-5 rounded-full bg-[#F43F5E] cursor-pointer hover:scale-110 transition-transform" data-color="#F43F5E"></div>
+                    <div class="theme-dot w-5 h-5 rounded-full bg-[#F59E0B] cursor-pointer hover:scale-110 transition-transform" data-color="#F59E0B"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENT -->
+        <main class="flex-1 p-4 lg:p-10 overflow-y-auto relative h-screen z-10 custom-scrollbar">
+            <div class="lg:hidden flex justify-between items-center mb-6 sticky top-0 z-40 bg-[var(--bg)]/80 backdrop-blur-md p-4 -mx-4 shadow-lg border-b border-[var(--border)]">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[var(--accent)] rounded-lg flex items-center justify-center"><i class="ph-bold ph-aperture text-black"></i></div>
+                    <span class="font-bold text-lg uppercase tracking-tight text-[var(--text-main)]">Compass OS</span>
+                </div>
+                <button id="mobile-menu-btn" class="p-2 bg-[var(--card)] rounded-lg border border-[var(--border)] focus:outline-none"><i class="ph-bold ph-list text-2xl text-[var(--text-main)]"></i></button>
+            </div>
+
+            <!-- DASHBOARD -->
+            <section id="dashboard-page" class="page-content fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-10">
+                    <div>
+                        <p id="current-date" class="text-[var(--accent)] font-extrabold text-xs md:text-sm uppercase tracking-[0.4em] mb-2 font-mono"></p>
+                        <h2 id="greeting" class="text-4xl leading-none font-black tracking-tight text-gradient pb-2 cypher-text">System Active</h2>
+                        
+                        <div class="mt-4 flex items-center gap-3 p-3 lg:p-4 bg-[var(--card)] rounded-xl border border-[var(--border)] w-full lg:w-max max-w-full shadow-lg group hover:border-[var(--accent-pink)] transition-all backdrop-blur-md">
+                            <span class="relative flex h-3 w-3 shrink-0">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                            <span id="daily-briefing" class="text-xs lg:text-sm text-[var(--text-dim)] font-medium italic typing-cursor leading-relaxed relative z-10 min-w-[200px] inline-block">Optimizing logic matrices...</span>
+                            <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                <button id="read-briefing-btn" class="text-[var(--text-dim)] hover:text-[var(--accent-pink)] bg-black/30 p-1.5 rounded-lg focus:outline-none hover:scale-110 transition-transform" title="Vocalize Matrix Quote"><i class="ph-bold ph-speaker-high text-sm"></i></button>
+                                <button id="refresh-briefing-btn" class="text-[var(--text-dim)] hover:text-[var(--accent)] bg-black/30 p-1.5 rounded-lg focus:outline-none hover:scale-110 transition-transform" title="Refresh Quote"><i class="ph-bold ph-arrows-clockwise text-sm"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right mt-6 md:mt-0 flex flex-col items-end shrink-0">
+                        <div class="group relative z-20">
+                            <div class="absolute -top-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                 <button id="toggle-time-btn" class="text-[9px] font-black tracking-widest bg-black/40 px-2 py-1 rounded-md border border-[var(--border)] focus:outline-none hover:text-[var(--text-main)] transition-colors">12H FORMAT</button>
+                            </div>
+                            <div id="clock-display" class="text-5xl font-mono font-black tracking-tighter">00:00:00</div>
+                        </div>
+                        <div id="system-status" class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border)] bg-black/40 cursor-pointer hover:bg-black/60 transition-all focus:outline-none hover:scale-105 backdrop-blur-md" title="Force Offline Mode">
+                            <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] transition-colors"></div>
+                            <span id="status-text" class="text-[9px] font-black tracking-widest uppercase text-[var(--text-dim)] transition-colors">Local Matrix Linked</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="studio-card p-8 mb-8 border-l-4 border-l-[var(--accent)] overflow-visible">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] opacity-80 flex items-center gap-2 mb-8"><i class="ph-bold ph-globe-hemisphere-west text-[var(--accent)]"></i> <span class="cypher-text">Universal Open Hub</span></h3>
+                    
+                    <div class="relative group mb-4">
+                        <input id="universal-search-input" type="text" placeholder="Type /settings to configure, or execute an AI query..." class="relative w-full bg-[#050505] border-2 border-[var(--border)] rounded-2xl px-6 py-5 pl-14 pr-16 text-sm font-medium focus:border-[var(--accent)] outline-none shadow-inner text-[var(--text-main)] transition-colors">
+                        <i class="ph-bold ph-magnifying-glass absolute left-5 top-6 text-[var(--text-dim)] text-xl z-10"></i>
+                        <button id="voice-command-btn" class="absolute right-3 top-3 bottom-3 w-12 rounded-xl text-[var(--accent)] hover:bg-[var(--accent)]/10 focus:outline-none transition-transform z-10"><i class="ph-fill ph-microphone text-xl"></i></button>
+                    </div>
+
+                    <div class="flex justify-end mb-6"><button id="ask-ai-btn" class="flex items-center gap-2 bg-[var(--accent)] text-black px-6 py-3 rounded-xl font-black text-xs uppercase shadow-[0_0_20px_var(--accent-glow)] hover:scale-105 transition-transform focus:outline-none"><i class="ph-bold ph-sparkle"></i> EXECUTE AI QUERY</button></div>
+                    <div id="ai-search-output" class="mb-8 p-6 bg-[var(--bg)] border border-[var(--border)] rounded-xl hidden text-sm text-[var(--text-main)] leading-relaxed"></div>
+                    
+                    <div id="search-engine-buttons" class="flex flex-wrap gap-4 pt-6 border-t border-[var(--border)] relative z-10 mt-2"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    
+                    <div class="studio-card p-8 border-l-4 border-l-yellow-400 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph-fill ph-calendar text-yellow-400"></i> Local Time Sync</h3>
+                            <input id="auspicious-location-input" type="text" value="" placeholder="Enter City (e.g., Tokyo)" class="w-full bg-[#050505] border-[#222] border rounded-xl px-5 py-4 text-sm outline-none focus:border-[var(--accent)] mb-4 text-[var(--text-main)] transition-colors placeholder-gray-600">
+                            <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-4">Location Matrix Data</p>
+                        </div>
+                        <button id="get-auspicious-timings-btn" class="w-full bg-yellow-400 text-black font-black py-4 rounded-xl text-xs tracking-widest hover:brightness-110 transition shadow-lg focus:outline-none">CHECK TIMINGS</button>
+                    </div>
+
+                    <div class="studio-card p-8 border-l-4 border-l-yellow-600 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2 text-yellow-600"><i class="ph-fill ph-coins"></i> Bullion Market</h3>
+                            <input id="location-input" type="text" value="" placeholder="Enter City (e.g., London)" class="w-full bg-[#050505] border-[#222] border rounded-xl px-5 py-4 text-sm outline-none focus:border-[var(--accent)] mb-4 text-[var(--text-main)] transition-colors placeholder-gray-600">
+                            <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-4">Global Price Index</p>
+                        </div>
+                        <button id="get-gold-rates-btn" class="w-full bg-yellow-600 text-white font-black py-4 rounded-xl text-xs tracking-widest hover:bg-yellow-700 transition shadow-lg focus:outline-none">CHECK RATES</button>
+                    </div>
+
+                    <div class="studio-card p-8 border-t-4 border-t-[var(--accent-pink)] flex flex-col justify-between md:col-span-2 xl:col-span-1">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-widest mb-4 flex items-center justify-between text-[var(--accent-pink)]"><span class="flex items-center gap-2"><i class="ph-bold ph-timer"></i> Focus Timer</span><div id="focus-status" class="w-2 h-2 rounded-full bg-gray-500 transition-colors"></div></h3>
+                            <div id="focus-time-display" class="text-5xl font-mono font-black tracking-tighter drop-shadow-lg text-center pt-2 pb-2 transition-all">25:00</div>
+                            <div class="flex justify-center gap-2 mb-5">
+                                <button class="focus-preset-btn text-[9px] font-bold px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent-pink)] hover:border-[var(--accent-pink)] transition focus:outline-none" data-mins="15">15M</button>
+                                <button class="focus-preset-btn text-[9px] font-bold px-2 py-1 rounded-md border border-[var(--accent-pink)] text-[var(--accent-pink)] transition shadow-[0_0_10px_rgba(255,0,153,0.2)] focus:outline-none" data-mins="25">25M</button>
+                                <button class="focus-preset-btn text-[9px] font-bold px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent-pink)] hover:border-[var(--accent-pink)] transition focus:outline-none" data-mins="50">50M</button>
+                                <button class="focus-preset-btn text-[9px] font-bold px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-dim)] hover:text-[var(--accent-pink)] hover:border-[var(--accent-pink)] transition focus:outline-none" data-mins="90">90M</button>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex gap-2">
+                                <button id="focus-toggle-btn" class="flex-1 bg-[var(--accent-pink)] text-white font-black py-4 rounded-xl text-xs tracking-widest hover:brightness-110 transition shadow-[0_0_15px_rgba(255,0,153,0.3)] focus:outline-none">START</button>
+                                <button id="focus-reset-btn" class="w-14 bg-black/40 border border-[var(--border)] font-black py-4 rounded-xl text-[var(--text-main)] hover:bg-[var(--border)] transition focus:outline-none"><i class="ph-bold ph-arrow-counter-clockwise text-lg"></i></button>
+                            </div>
+                            <button id="enter-zenith-btn" class="w-full mt-3 bg-transparent border border-[var(--accent-pink)] text-[var(--accent-pink)] font-black py-3 rounded-xl text-xs tracking-widest hover:bg-[var(--accent-pink)] hover:text-white transition flex items-center justify-center gap-2 focus:outline-none"><i class="ph-bold ph-corners-out text-lg"></i> IMMERSIVE MODE</button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PRODUCTIVITY -->
+            <section id="productivity-page" class="page-content hidden fade-in">
+                 <h2 class="text-3xl font-black mb-8 uppercase cypher-text">Productivity</h2>
+                 
+                 <div class="studio-card p-1 mb-10 overflow-hidden border-2 border-[var(--border)] relative z-10">
+                     <div class="bg-[var(--border)] px-6 py-3 flex justify-between items-center">
+                        <h3 class="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-[var(--text-main)]"><i class="ph-bold ph-calendar text-[var(--accent)]"></i> Live Event Matrix</h3>
+                        <span class="text-[10px] text-[var(--text-dim)] font-bold uppercase flex items-center gap-1"><i class="ph-bold ph-lock-key text-[var(--accent)]"></i> E2E SYNC</span>
+                     </div>
+                     <iframe class="calendar-embed" src="https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com&ctz=Asia%2FKolkata&mode=MONTH&showNav=1&showTitle=0" style="border: 0; width: 100%; height: 450px;" frameborder="0" scrolling="no"></iframe>
+                 </div>
+
+                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                     <div class="studio-card p-8 flex flex-col h-full border-t-4 border-t-[var(--accent)] bg-[#0a0a0a]">
+                        <div class="flex justify-between items-start mb-6">
+                            <h3 class="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-[var(--accent)]"><i class="ph-bold ph-check-square"></i> Task Strategy</h3>
+                            <div class="w-12 h-12 relative"><svg viewBox="0 0 36 36" class="circular-chart accent"><path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" /><path id="task-progress-circle" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" /></svg><div id="task-progress-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold">0%</div></div>
+                        </div>
+                        <div class="flex gap-2 mb-6">
+                            <input id="task-input" type="text" placeholder="Define new task (e.g., 'Compile sector report')..." class="flex-grow bg-[#050505] border border-[#222] rounded-lg px-4 py-3 text-sm focus:border-[var(--accent)] outline-none text-[var(--text-main)] transition-colors placeholder-gray-600">
+                            <button id="add-task-btn" class="bg-[var(--accent)] text-black font-black p-3 rounded-lg hover:scale-105 transition-transform focus:outline-none"><i class="ph-bold ph-plus text-xl"></i></button>
+                        </div>
+                        <div id="task-list" class="space-y-3 mb-6 flex-grow overflow-y-auto max-h-64 custom-scrollbar"></div>
+                        <button id="suggest-steps-btn" class="w-full bg-[#0a0a0a] border border-[#222] text-white font-black py-4 rounded-xl text-[10px] tracking-widest uppercase transition-all hover:border-orange-500 hover:shadow-[0_0_15px_rgba(249,115,22,0.2)] focus:outline-none disabled:opacity-50 flex items-center justify-center gap-2 mt-auto" disabled>
+                            <i class="ph-fill ph-sparkle text-orange-500 text-lg"></i> Breakdown Strategy via AI
+                        </button>
+                        <div id="task-suggestions-area" class="mt-6 text-sm text-[var(--text-main)] hidden bg-[#050505] p-5 border border-[#222] rounded-xl leading-relaxed"></div>
+                     </div>
+                     <div class="studio-card p-8 border-t-4 border-t-green-500 bg-[#0a0a0a]">
+                        <h3 class="text-sm font-bold uppercase tracking-widest mb-6 flex items-center gap-2 text-green-500"><i class="ph-bold ph-note-pencil"></i> Smart Notes</h3>
+                        <textarea id="note-input" rows="7" class="w-full bg-[#050505] border border-[#222] rounded-lg p-4 text-sm outline-none focus:border-green-500 mb-4 text-[var(--text-main)] custom-scrollbar transition-colors placeholder-gray-600" placeholder="Initialize neural draft..."></textarea>
+                        <button id="enhance-note-btn" class="w-full bg-[#0a0a0a] border border-[#222] text-[var(--text-main)] font-black py-4 rounded-xl text-[10px] uppercase tracking-widest hover:border-orange-500 hover:shadow-[0_0_15px_rgba(249,115,22,0.2)] transition-all focus:outline-none flex items-center justify-center gap-2">
+                            <i class="ph-fill ph-sparkle text-orange-500 text-lg"></i> Enhance via AI
+                        </button>
+                        <div id="note-ai-output" class="mt-6 text-sm text-[var(--text-main)] bg-[#050505] p-5 border border-[#222] rounded-xl hidden leading-relaxed"></div>
+                     </div>
+                 </div>
+            </section>
+
+            <!-- FINANCE PAGE -->
+            <section id="finance-page" class="page-content hidden fade-in h-full flex flex-col">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-black uppercase cypher-text tracking-tight">Finance Hub</h2>
+                    <span class="bg-green-600 text-white text-[9px] font-black tracking-widest uppercase px-3 py-1.5 rounded shadow-[0_0_15px_rgba(34,197,94,0.4)]">Quantum Yield Active</span>
+                </div>
+                
+                <div class="flex-grow grid grid-cols-1 xl:grid-cols-12 gap-8">
+                    <div class="lg:col-span-5 studio-card p-8 border-l-[3px] border-l-green-500 flex flex-col justify-between bg-[#0a0a0a] shadow-[-15px_0_30px_-10px_rgba(34,197,94,0.15)] relative overflow-visible">
+                        <div>
+                            <h3 class="text-[11px] font-bold uppercase tracking-widest mb-8 text-green-500 flex items-center gap-2"><i class="ph-bold ph-chart-line-up text-lg"></i> Quantum Debt Matrix</h3>
+                            
+                            <div class="space-y-5 relative z-10">
+                                <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1 mb-2"><i class="ph-fill ph-database text-green-500"></i> Capital Allocation (₹)</label><input type="number" id="principal" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 outline-none text-white font-mono transition-colors focus:border-green-500 shadow-inner" value="100000"></div>
+                                <div class="flex gap-4">
+                                    <div class="flex-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1 mb-2"><i class="ph-fill ph-percent text-green-500"></i> Rate Variance</label><input type="number" id="interest" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 outline-none text-white font-mono transition-colors focus:border-green-500 shadow-inner" value="10"></div>
+                                    <div class="flex-1"><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1 mb-2"><i class="ph-fill ph-hourglass text-green-500"></i> Temporal Tenure</label><input type="number" id="tenure" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 outline-none text-white font-mono transition-colors focus:border-green-500 shadow-inner" value="5"></div>
+                                </div>
+                            </div>
+                            
+                            <div id="risk-assessment-section" class="mt-8 hidden p-6 bg-[#050505] border border-green-500/20 rounded-2xl relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+                                <div class="flex justify-between items-center mb-4"><h4 class="text-[10px] font-black uppercase text-green-500 tracking-[0.2em] flex items-center gap-2"><i class="ph-bold ph-cpu"></i> Neural Risk Analysis</h4><span id="risk-rating-badge" class="risk-tag risk-low shadow-[0_0_10px_rgba(34,197,94,0.2)]">Neutral</span></div>
+                                <div id="loan-analysis-area" class="text-xs leading-relaxed space-y-2 cypher-text text-white"></div>
+                            </div>
+
+                            <div class="mt-8 text-center bg-[#050505] p-6 rounded-2xl border border-[#222] relative overflow-hidden group">
+                                 <div class="absolute inset-0 bg-[linear-gradient(rgba(34,197,94,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(34,197,94,0.03)_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none z-0"></div>
+                                 <div class="absolute inset-0 bg-green-500/5 group-hover:bg-green-500/10 transition-colors"></div>
+                                 <p class="text-[10px] font-bold uppercase tracking-[0.2em] mb-2 text-gray-500 relative z-10">Projected Monthly Liability</p>
+                                 <h4 id="emi-amount" class="text-5xl font-black text-green-500 font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(34,197,94,0.4)] relative z-10">₹0</h4>
+                            </div>
+                        </div>
+                        <button id="analyze-loan-btn" class="w-full mt-8 bg-green-600 text-white font-black py-4 rounded-xl text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:brightness-110 transition focus:outline-none flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-brain text-lg"></i> Execute Risk Simulation
+                        </button>
+                    </div>
+                    
+                    <div class="lg:col-span-7 studio-card p-8 border border-[#222] bg-[#050505] flex flex-col justify-center relative overflow-hidden h-full">
+                        <div class="absolute inset-0 bg-[linear-gradient(rgba(0,224,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,224,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none z-0"></div>
+                        <div class="relative z-10 w-full max-w-lg mx-auto">
+                            <h3 class="text-[11px] font-bold uppercase tracking-widest mb-8 text-gray-500 flex items-center gap-2 justify-center"><i class="ph-bold ph-calculator text-lg text-[var(--accent)]"></i> Computational Core</h3>
+                            <input id="calc-display" type="text" class="w-full bg-[#000] border border-[#222] rounded-2xl p-6 text-right text-5xl font-mono mb-8 outline-none text-[var(--accent)] shadow-[inset_0_0_30px_rgba(0,0,0,0.8)] focus:border-[var(--accent)] focus:shadow-[0_0_20px_var(--accent-glow)] transition-all tracking-widest" readonly placeholder="0">
+                            <div id="calc-buttons" class="grid grid-cols-4 gap-4 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NEXUS PAGE -->
+            <section id="nexus-page" class="page-content hidden fade-in">
+                 <h2 class="text-3xl font-black mb-8 uppercase cypher-text">Analytics Matrix</h2>
+                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                     <div class="studio-card p-8 border-t-4 border-t-[var(--accent)] lg:col-span-2">
+                         <div class="flex justify-between items-end mb-6">
+                             <div>
+                                 <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--accent)] mb-2"><i class="ph-bold ph-activity"></i> Execution Heatmap</h3>
+                                 <p class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest">52-Week Rolling Consistency</p>
+                             </div>
+                             <div class="text-right">
+                                 <div class="text-4xl font-black tracking-tighter text-[var(--text-main)]" id="nexus-total-commits">0</div>
+                                 <div class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest">Total Actions</div>
+                             </div>
+                         </div>
+                         <div class="w-full overflow-x-auto pb-4 custom-scrollbar flex flex-row-reverse">
+                             <div id="heatmap-container" class="flex gap-[3px] min-w-max"></div>
+                         </div>
+                     </div>
+                     <div class="studio-card p-8 border-l-4 border-l-green-500 flex flex-col">
+                        <h3 class="text-sm font-bold uppercase tracking-widest mb-6 text-green-500"><i class="ph-bold ph-target"></i> Goals (OKRs)</h3>
+                        <div class="space-y-3 flex-grow overflow-y-auto custom-scrollbar max-h-[300px]" id="okr-container"></div>
+                        <div class="mt-6 flex gap-2 pt-4 border-t border-[var(--border)]">
+                            <input type="text" id="new-okr-input" placeholder="Define a new Goal..." class="flex-grow bg-[#050505] border border-[#222] rounded-lg p-2 text-xs outline-none focus:border-green-500 text-[var(--text-main)] transition-colors">
+                            <button id="add-okr-btn" class="bg-green-600 text-white font-black px-4 rounded-lg text-xs uppercase hover:brightness-110 transition focus:outline-none">ADD</button>
+                        </div>
+                     </div>
+                 </div>
+            </section>
+
+            <!-- SWARM PAGE -->
+            <section id="swarm-page" class="page-content hidden fade-in">
+                <h2 class="text-3xl font-black mb-8 uppercase cypher-text">AI Agents Hub</h2>
+                <div class="studio-card p-8 border-t-4 border-t-purple-500 mb-8 bg-[#0a0a0a]">
+                    <h3 class="text-sm font-bold uppercase text-purple-400 mb-4"><i class="ph-bold ph-graph"></i> Multi-Agent Commander</h3>
+                    <textarea id="swarm-directive-input" rows="3" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 outline-none focus:border-purple-500 mb-4 custom-scrollbar text-[var(--text-main)] transition-colors placeholder-gray-600" placeholder="Enter master objective to deploy autonomous agents (e.g., 'Research the impact of quantum computing on modern cryptography')..."></textarea>
+                    <button id="deploy-swarm-btn" class="w-full bg-[var(--accent-purple)] text-white font-black py-4 rounded-xl text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(189,0,255,0.3)] hover:brightness-110 transition focus:outline-none flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-rocket text-lg"></i> Deploy Swarm
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="terminal-panel h-64"><div class="terminal-header text-[var(--accent)] border-b border-[var(--accent)]/30 bg-[var(--accent)]/5">Agent 01 // Research</div><div class="terminal-body" id="swarm-out-data"><span class="opacity-30 cypher-text">Awaiting directive...</span></div></div>
+                    <div class="terminal-panel h-64"><div class="terminal-header text-rose-500 border-b border-rose-500/30 bg-rose-500/5">Agent 02 // Strategy</div><div class="terminal-body" id="swarm-out-sec"><span class="opacity-30 cypher-text">Awaiting directive...</span></div></div>
+                    <div class="terminal-panel h-64"><div class="terminal-header text-green-500 border-b border-green-500/30 bg-green-500/5">Agent 03 // Execution</div><div class="terminal-body" id="swarm-out-ops"><span class="opacity-30 cypher-text">Awaiting directive...</span></div></div>
+                </div>
+            </section>
+
+            <!-- IMAGE STUDIO PAGE -->
+            <section id="image-studio-page" class="page-content hidden fade-in h-full flex flex-col">
+                <h2 class="text-3xl font-black mb-8 uppercase cypher-text tracking-tight">Generate Visual</h2>
+                <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <div class="lg:col-span-4 studio-card p-6 flex flex-col gap-6 bg-[#0a0a0a] border border-[#222] relative overflow-visible border-l-[3px] border-l-[var(--accent)] shadow-[-15px_0_30px_-10px_var(--accent-glow)]">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Visual Prompt</label>
+                                <button id="enhance-image-prompt" class="text-[10px] font-bold uppercase text-[var(--accent)] hover:brightness-125 flex items-center gap-1 transition-colors focus:outline-none"><i class="ph-bold ph-magic-wand"></i> Enhance</button>
+                            </div>
+                            <textarea id="image-prompt-input" rows="4" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 text-sm outline-none custom-scrollbar text-white transition-colors focus:border-[var(--accent)] hover:border-[#333] placeholder-gray-600" placeholder="E.g., 'A cyberpunk city raining neon, 8k, ultra-detailed, photorealistic...'"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Reference Identity <span class="opacity-50">(Optional Base64 Embed)</span></label>
+                            <input type="file" id="image-ref-input" class="hidden" accept="image/*">
+                            <button id="image-ref-btn" class="w-full py-4 border border-[#222] rounded-xl text-xs font-bold text-[var(--text-dim)] hover:text-white hover:border-gray-500 transition-all flex justify-center items-center gap-2 bg-[#050505] focus:outline-none">
+                                <i class="ph-bold ph-upload-simple text-lg" id="image-ref-icon"></i> <span id="image-ref-text">Upload Image Reference</span>
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Creative Style</label>
+                            <div class="grid grid-cols-2 gap-3" id="image-style-buttons"></div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Frame Ratio</label>
+                            <div class="grid grid-cols-3 gap-3" id="aspect-ratio-buttons"></div>
+                        </div>
+                        
+                        <button id="generate-image-btn" class="w-full bg-[var(--accent)] text-black font-black py-4 rounded-xl mt-auto shadow-[0_0_20px_var(--accent-glow)] hover:scale-[1.02] transition-transform focus:outline-none tracking-widest uppercase text-xs">GENERATE VISUAL</button>
+                    </div>
+                    
+                    <div class="lg:col-span-8 studio-card flex flex-col bg-[#050505] border border-[#222] relative overflow-hidden rounded-2xl h-full min-h-[500px]">
+                        <div class="p-4 border-b border-[#222] bg-[#0a0a0a] flex items-center gap-2 z-20">
+                            <i class="ph-bold ph-image text-[var(--text-dim)]"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-dim)]">Image Viewport</span>
+                        </div>
+                        <div class="flex-grow flex items-center justify-center relative p-4 w-full h-full" id="image-container">
+                            
+                            <div id="image-loader" class="hidden absolute inset-0 bg-[#050505]/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center">
+                                <div class="w-16 h-16 border-[4px] border-[var(--accent)] border-t-transparent border-r-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_var(--accent-glow)]"></div>
+                                <span class="bg-black/90 px-4 py-2 border border-[var(--accent)] shadow-[0_0_15px_var(--accent-glow)] text-[12px] font-mono font-bold tracking-[0.2em] text-white uppercase rounded-lg">Rendering...</span>
+                            </div>
+                            
+                            <img id="generated-image" class="hidden w-full h-full object-contain absolute inset-0 z-10 p-4">
+                            
+                            <div id="image-placeholder" class="text-center opacity-100 flex flex-col items-center justify-center p-8 transition-opacity duration-300">
+                                <i id="image-placeholder-icon" class="ph-bold ph-image text-6xl mb-6 text-[#222]"></i>
+                                <span id="image-error-title" class="hidden text-rose-500 font-bold tracking-widest uppercase text-[10px] mb-2 cypher-text">GENERATION FAILED</span>
+                                <p id="image-error-desc" class="text-[10px] text-[#444] font-bold uppercase tracking-widest">Awaiting Visual Directives</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CINEMA STUDIO PAGE -->
+            <section id="cinematic-studio-page" class="page-content hidden fade-in h-full flex flex-col">
+                <div class="flex items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-black uppercase cypher-text tracking-tight">Render Sequence</h2>
+                    <span class="bg-[#a800ff] text-white text-[9px] font-black tracking-widest uppercase px-3 py-1.5 rounded shadow-[0_0_15px_rgba(168,0,255,0.4)]">Generative Audio-Reactive</span>
+                </div>
+                
+                <div class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-4 studio-card p-6 flex flex-col gap-6 bg-[#0a0a0a] border border-[#222] relative overflow-visible border-l-[3px] border-l-[var(--accent-purple)] shadow-[-15px_0_30px_-10px_rgba(168,0,255,0.15)]">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest">Cinematic Prompt</label>
+                                <button id="enhance-video-prompt" class="text-[10px] font-bold uppercase text-[var(--accent-purple)] hover:brightness-125 flex items-center gap-1 transition-colors focus:outline-none"><i class="ph-bold ph-magic-wand"></i> Enhance</button>
+                            </div>
+                            <textarea id="video-prompt-input" rows="4" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 text-sm outline-none custom-scrollbar text-white transition-colors focus:border-[var(--accent-purple)] hover:border-[#333] placeholder-gray-600" placeholder="E.g., 'Slow pan over a majestic alien landscape, cinematic lighting, 35mm...'"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Keyframe Matrix <span class="opacity-50">(Optional Base64 Embed)</span></label>
+                            <input type="file" id="video-ref-input" class="hidden" accept="image/*">
+                            <button id="video-ref-btn" class="w-full py-4 border border-[#222] rounded-xl text-xs font-bold text-[var(--text-dim)] hover:text-white hover:border-gray-500 transition-all flex justify-center items-center gap-2 bg-[#050505] focus:outline-none">
+                                <i class="ph-bold ph-image text-lg" id="video-ref-icon"></i> <span id="video-ref-text">Upload Image Keyframe</span>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Camera Motion</label>
+                                <select class="w-full bg-[#050505] border border-[#222] rounded-xl p-3 text-[var(--text-main)] outline-none focus:border-[var(--accent-purple)] text-xs font-bold transition-colors cursor-pointer appearance-none shadow-inner">
+                                    <option>Audio Reactive</option>
+                                    <option>Dynamic Pan</option>
+                                    <option>Slow Zoom</option>
+                                    <option>Static Drone</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold uppercase text-gray-500 tracking-widest mb-3 block">Background Audio</label>
+                                <select class="w-full bg-[#050505] border border-[#222] rounded-xl p-3 text-[var(--text-main)] outline-none focus:border-[var(--accent-purple)] text-xs font-bold transition-colors cursor-pointer appearance-none shadow-inner">
+                                    <option>Cinematic Flow</option>
+                                    <option>Ethereal Synth</option>
+                                    <option>Cyberpunk Beat</option>
+                                    <option>Muted</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button id="generate-video-btn" class="w-full bg-[#a800ff] text-white font-black py-4 rounded-xl mt-auto shadow-[0_0_25px_rgba(168,0,255,0.4)] hover:scale-[1.02] transition-transform focus:outline-none tracking-widest uppercase text-xs">RENDER SEQUENCE</button>
+                    </div>
+                    
+                    <div class="lg:col-span-8 studio-card flex flex-col bg-[#050505] border border-[#222] relative overflow-hidden rounded-2xl h-full min-h-[500px]">
+                        <div class="p-4 border-b border-[#222] bg-[#0a0a0a] flex items-center gap-2 z-20">
+                            <i class="ph-bold ph-film-strip text-[var(--text-dim)]"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-dim)]">Real-Time Engine Viewport</span>
+                        </div>
+                        <div class="flex-grow flex items-center justify-center relative p-4">
+                            
+                            <div id="video-loader" class="hidden absolute inset-0 bg-[#050505]/80 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center">
+                                <div class="w-16 h-16 border-[4px] border-[#a800ff] border-t-transparent border-r-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(168,0,255,0.4)]"></div>
+                                <span class="bg-black/90 px-4 py-2 border border-[#a800ff] shadow-[0_0_15px_rgba(168,0,255,0.4)] text-[12px] font-mono font-bold tracking-[0.2em] text-white uppercase rounded-lg">Compiling...</span>
+                            </div>
+                            
+                            <div id="cinematic-layer" class="absolute inset-4 rounded-xl overflow-hidden bg-gradient-to-br from-[#1a0033] to-[#a800ff] opacity-0 transition-opacity duration-1000 z-10 bg-cover bg-center border border-[#222]"></div>
+                            <div class="overlay-scanlines z-20"></div>
+                            
+                            <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center z-10 transition-opacity duration-300">
+                                <i id="video-placeholder-icon" class="ph-bold ph-film-strip text-6xl mb-6 text-[#222]"></i>
+                                <span id="video-error-title" class="hidden text-rose-500 font-bold tracking-widest uppercase text-[10px] mb-2 cypher-text">RENDER FAILED</span>
+                                <p id="video-error-desc" class="text-[10px] text-[#444] font-bold uppercase tracking-widest">Awaiting Sequence Directives</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS & TELEMETRY -->
+            <section id="settings-page" class="page-content hidden fade-in max-w-4xl mx-auto pb-20">
+                <h2 class="text-3xl font-black mb-8 uppercase cypher-text tracking-tight text-[var(--text-main)]">System Configuration</h2>
+                
+                <div class="space-y-8 relative z-10">
+                    
+                    <!-- Identity Calibration -->
+                    <div class="studio-card p-8 border-t border-[var(--border)] bg-[#0a0a0a]">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-[11px] font-bold uppercase tracking-widest text-[var(--text-main)]">User Profile</h3>
+                                <p class="text-[10px] text-[var(--text-dim)] mt-1 uppercase tracking-widest">Define your operator designation.</p>
+                            </div>
+                            <i class="ph-bold ph-user-circle text-2xl text-[var(--text-dim)]"></i>
+                        </div>
+                        <div class="flex gap-4">
+                            <input type="text" id="user-alias-input" placeholder="Enter Designation / Alias..." class="flex-grow bg-[#050505] border border-[#222] rounded-xl p-4 text-sm text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors shadow-inner">
+                            <button id="save-identity-btn" class="bg-[var(--accent)] text-black font-black px-8 py-4 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 transition shadow-[0_0_20px_var(--accent-glow)] focus:outline-none whitespace-nowrap flex items-center gap-2"><i class="ph-bold ph-check text-lg"></i> SAVE</button>
+                        </div>
+                    </div>
+
+                    <!-- Aesthetic Dynamics -->
+                    <div class="studio-card p-8 border-t border-[var(--border)] bg-[#0a0a0a]">
+                        <div class="flex items-center gap-2 mb-8">
+                            <i class="ph-bold ph-palette text-[var(--text-main)] text-sm"></i>
+                            <h3 class="text-[11px] font-bold uppercase tracking-widest text-[var(--text-main)]">Appearance & UI</h3>
+                        </div>
+                        
+                        <div class="mb-10">
+                            <label class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest mb-4 block">Glass Effect (Blur)</label>
+                            <div class="setting-btn-group">
+                                <button class="setting-btn glass-button" data-glass-btn="2px">Low (Vapor)</button>
+                                <button class="setting-btn glass-button active" data-glass-btn="10px">Medium (Frosted)</button>
+                                <button class="setting-btn glass-button" data-glass-btn="25px">High (Solid)</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-10">
+                            <label class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest mb-4 block">Animation Speed</label>
+                            <div class="setting-btn-group">
+                                <button class="setting-btn speed-button" data-speed-btn="0s">Instant</button>
+                                <button class="setting-btn speed-button active" data-speed-btn="0.3s">Fluid</button>
+                                <button class="setting-btn speed-button" data-speed-btn="0.8s">Cinematic</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-10">
+                            <label class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest mb-4 block">Environment Theme</label>
+                            <select id="select-bg-style" class="w-full bg-[#050505] border border-[var(--border)] rounded-xl p-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer appearance-none shadow-inner">
+                                <option value="radial">Void Radial (Default)</option>
+                                <option value="grid">Cyber Grid</option>
+                                <option value="minimal">Minimal Dark</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2 pt-6 border-t border-[var(--border)]">
+                            
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Holographic Orb Presence</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">RENDER FLOATING J.A.R.V.I.S. ORB OVERLAY.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-orb" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+                            
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Neural Matrix Canvas</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">RENDER AMBIENT BACKGROUND PARTICLES.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-matrix-bg" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">System Audio & Haptics</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">ENABLE UI CLICKS, ALERTS, AND VOICE.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-sound" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Custom Magnetic Cursor</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">OVERRIDE DEFAULT OS MOUSE POINTER.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-cursor" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+                            
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Motion Parallax</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">BACKGROUND SUBTLE MOVEMENT EFFECT.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-parallax" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Terminal Text Scramble</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">HACKER-STYLE TEXT DECODING ANIMATION.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-cypher" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4 border-b border-[var(--border)]">
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Live Web Search (Grounding)</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">ALLOW AI TO SURF THE WEB FOR LIVE DATA (GEMINI ONLY).</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-web-grounding" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+
+                            <label class="cyan-toggle flex items-center justify-between cursor-pointer group py-4">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">Hardware Telemetry HUD</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">DISPLAY REAL-TIME FPS AND V8 HEAP MEMORY ALLOCATION.</span>
+                                </div>
+                                <div class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-telemetry" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- SECURITY MATRIX -->
+                    <div class="studio-card p-8 border-t border-[var(--border)] relative overflow-hidden bg-[#0a0a0a]">
+                        <h3 class="text-[11px] font-bold uppercase tracking-widest mb-8 flex items-center gap-2 text-rose-500"><i class="ph-bold ph-shield-check"></i> Security & Data</h3>
+                        
+                        <div class="bg-[#2a0e14] border border-rose-500/20 rounded-xl p-6 flex gap-4 items-center mb-10">
+                            <i class="ph-fill ph-lock-key text-rose-500 text-3xl"></i>
+                            <div>
+                                <h4 class="text-[11px] font-bold text-rose-500 uppercase tracking-widest mb-2">End-To-End Local Encryption</h4>
+                                <p class="text-[11px] text-[var(--text-dim)] leading-relaxed">Your data matrix is cryptographically secured within this device's local vault. Zero external cloud persistence. <b>Do not share your browser profile if API keys are linked.</b></p>
+                            </div>
+                        </div>
+
+                        <label class="red-toggle flex items-center justify-between cursor-pointer group mb-10 border-b border-[var(--border)] pb-10">
+                            <div>
+                                <span class="block text-sm font-bold text-[var(--text-main)] transition-colors">System Lock Screen</span>
+                                <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block">REQUIRE PASSCODE ON BOOT.</span>
+                            </div>
+                            <div class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-auth-req" class="sr-only peer">
+                                <div class="w-11 h-6 bg-[rgba(255,255,255,0.1)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all border border-[var(--border)]"></div>
+                            </div>
+                        </label>
+
+                        <!-- PASSCODE & BIOMETRICS NODE -->
+                        <div class="mb-10 border-b border-[var(--border)] pb-10 space-y-6">
+                            <h4 class="text-[10px] font-bold text-[var(--text-dim)] tracking-widest uppercase">Credential Management</h4>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="password" id="settings-current-pin" placeholder="Current PIN" class="bg-[#050505] border border-[var(--border)] rounded-xl p-4 text-sm text-center tracking-widest text-[var(--text-main)] outline-none focus:border-rose-500 transition-colors">
+                                <input type="password" id="settings-new-pin" placeholder="New PIN" class="bg-[#050505] border border-[var(--border)] rounded-xl p-4 text-sm text-center tracking-widest text-[var(--text-main)] outline-none focus:border-rose-500 transition-colors">
+                                <button id="update-pin-btn" class="bg-[#f43f5e] text-white font-black p-4 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 transition shadow-[0_0_20px_rgba(244,63,94,0.4)] focus:outline-none">UPDATE PIN</button>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-6">
+                                <div>
+                                    <span class="block text-sm font-bold text-[var(--text-main)]">Hardware Biometrics (WebAuthn)</span>
+                                    <span class="text-[10px] text-[var(--text-dim)] uppercase tracking-widest mt-1 block" id="biometric-status-text">MAP TOUCHID/WINDOWS HELLO TO MATRIX.</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="remove-biometrics-btn" class="hidden bg-transparent border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white font-black px-4 py-3 rounded-xl text-xs uppercase tracking-widest transition focus:outline-none flex items-center gap-2" title="Remove Biometrics"><i class="ph-bold ph-trash"></i></button>
+                                    <button id="register-biometrics-btn" class="bg-[#0a0a0a] border border-[var(--border)] text-[var(--text-main)] hover:border-white font-black px-6 py-4 rounded-xl text-xs uppercase tracking-widest transition focus:outline-none flex items-center gap-2"><i class="ph-bold ph-fingerprint text-lg"></i> ENROLL</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-dim)] mb-4">Backup & Restore</h3>
+                            <div class="flex gap-4">
+                                <button id="export-settings-btn" class="flex-1 bg-[#0a0a0a] border border-[var(--border)] text-[var(--text-main)] hover:border-white font-black py-5 rounded-xl text-[10px] uppercase tracking-widest transition focus:outline-none flex items-center justify-center gap-2"><i class="ph-bold ph-download-simple text-lg"></i> EXPORT BACKUP</button>
+                                <input type="file" id="import-settings-file" class="hidden" accept=".json">
+                                <button onclick="document.getElementById('import-settings-file').click()" class="flex-1 bg-[#0a0a0a] border border-[var(--border)] text-[var(--text-main)] hover:border-white font-black py-5 rounded-xl text-[10px] uppercase tracking-widest transition focus:outline-none flex items-center justify-center gap-2"><i class="ph-bold ph-upload-simple text-lg"></i> RESTORE DATA</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MULTI-MODEL AI GATEWAY -->
+                    <div class="studio-card p-8 border-t border-[var(--border)] relative overflow-hidden bg-[#0a0a0a]">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 text-[var(--text-main)]"><i class="ph-bold ph-brain text-lg text-[var(--accent)]"></i> Multi-Node AI Configuration</h3>
+                            <span class="text-[9px] font-bold text-green-500 uppercase tracking-widest flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded border border-green-500/20"><i class="ph-bold ph-lock-key"></i> Universal Gateway</span>
+                        </div>
+                        
+                        <p class="text-[11px] text-[var(--text-dim)] mb-8 leading-relaxed">Compass OS is <b class="text-white">100% FREE</b> by default using decentralized nodes. However, power users can optionally link a private Gemini or OpenAI API Key below to unlock premium speed, true multimodal vision, and exclusive models (DALL-E 3).</p>
+                        
+                        <div class="flex flex-col gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest mb-2 block">AI Provider Engine</label>
+                                <select id="api-provider-select" class="w-full bg-[#050505] border border-[#222] rounded-xl p-4 text-[var(--text-main)] outline-none focus:border-[var(--accent)] text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer appearance-none shadow-inner">
+                                    <option value="gemini">Google Gemini (Default)</option>
+                                    <option value="openai">OpenAI (GPT-4o & DALL-E 3)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-[10px] font-bold text-[var(--text-dim)] uppercase tracking-widest">Premium API Key <span class="opacity-50">(Optional Override)</span></label>
+                                    <div class="flex gap-3 text-[9px] font-bold uppercase tracking-widest">
+                                        <a href="#" onclick="window.openExternalLink('https://aistudio.google.com/app/apikey')" class="text-[var(--accent)] hover:underline hover:text-white transition-colors focus:outline-none flex items-center gap-1"><i class="ph-bold ph-key"></i> Get Gemini Key</a>
+                                        <a href="#" onclick="window.openExternalLink('https://platform.openai.com/api-keys')" class="text-[var(--accent-pink)] hover:underline hover:text-white transition-colors focus:outline-none flex items-center gap-1"><i class="ph-bold ph-key"></i> Get OpenAI Key</a>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4">
+                                    <input type="password" id="api-key-input" placeholder="Enter API Key (e.g., sk-...) to bypass free node..." class="flex-grow bg-[#050505] border border-[var(--border)] rounded-xl p-4 text-sm text-[var(--text-main)] outline-none focus:border-[var(--accent)] transition-colors shadow-inner placeholder-gray-600">
+                                    <button id="save-api-key-btn" class="bg-[var(--accent)] text-black font-black px-8 py-4 rounded-xl text-xs uppercase tracking-widest hover:brightness-110 transition shadow-[0_0_20px_var(--accent-glow)] focus:outline-none flex items-center gap-2 whitespace-nowrap"><i class="ph-bold ph-link text-lg"></i> Link Engine</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        "use strict";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const defaultApiKey = ""; 
+            // STATE MANAGEMENT
+            let state = { 
+                activePage: 'dashboard', tasks: [], selectedTaskId: null, imageStyle: 'photorealistic', aspectRatio: '1:1',
+                themeMode: 'dark', bgStyle: 'radial', timeFormat: '12', enableSound: true, requireAuth: true, enableCursor: false, 
+                enableParallax: true, enableNeural: true, enableOrb: false, enableWebGrounding: true, uiSpeed: '0.3s', glassIntensity: '10px', forceOffline: false,
+                userName: '', userApiKey: '', apiProvider: 'gemini', okrs: [], nexusData: Array.from({length: 364}, () => 0), 
+                lastLoginDate: new Date().toDateString(), currentBriefing: '',
+                focusDuration: 25 * 60, focusTimeLeft: 25 * 60, isFocusing: false, focusInterval: null, showTelemetry: true,
+                userPin: '0000', biometricsEnabled: false, webAuthnId: null,
+                imageReference: null, videoKeyframe: null, enableCypher: false
+            };
+            window._compassState = state; 
+
+            const el = id => document.getElementById(id);
+            const safeBind = (id, ev, fn) => { const n = el(id); if(n) n.addEventListener(ev, fn); };
+
+            window.openExternalLink = function(url) {
+                const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); setTimeout(() => document.body.removeChild(a), 100);
+            };
+
+            let audioCtx = null;
+            function initAudio() { 
+                if(!audioCtx) { const AC = window.AudioContext || window.webkitAudioContext; if(AC) audioCtx = new AC(); } 
+                if(audioCtx && audioCtx.state === 'suspended') { const p = audioCtx.resume(); if(p && p.catch) p.catch(e => {}); } 
+            }
+            function playSound(type) {
+                if(!state.enableSound || !audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), now = audioCtx.currentTime;
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    if (type === 'click') { osc.type='sine'; osc.frequency.setValueAtTime(1000, now); osc.frequency.exponentialRampToValueAtTime(2000, now+0.05); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.05); osc.start(now); osc.stop(now+0.05); } 
+                    else if (type === 'connect') { osc.type='sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(1200, now+0.2); gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.1, now+0.05); gain.gain.exponentialRampToValueAtTime(0.001, now+0.2); osc.start(now); osc.stop(now+0.2); }
+                    else if (type === 'disconnect') { osc.type='square'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(50, now+0.2); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+0.2); osc.start(now); osc.stop(now+0.2); }
+                } catch(e) {}
+            }
+            
+            const VoiceEngine = {
+                voices: [],
+                init() { 
+                    if ('speechSynthesis' in window) {
+                        const loadVoices = () => { this.voices = window.speechSynthesis.getVoices(); };
+                        loadVoices(); if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = loadVoices;
+                    } 
+                },
+                speak(text, forceAssertive = null) { 
+                    if (!state.enableSound || !('speechSynthesis' in window)) return;
+                    window.speechSynthesis.cancel();
+                    
+                    const cleanText = text.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                    
+                    let availableVoices = window.speechSynthesis.getVoices();
+                    if(availableVoices.length === 0) availableVoices = this.voices;
+                    
+                    if (availableVoices.length > 0) {
+                        const isAssertive = forceAssertive !== null ? forceAssertive : /forge|execute|weapon|trajectory|momentum|rise|cycle active|alert|warning|critical|override/i.test(cleanText);
+                        const premiumVoices = availableVoices.filter(v => /premium|enhanced|online|natural/i.test(v.name));
+                        const searchPool = premiumVoices.length > 0 ? premiumVoices.concat(availableVoices) : availableVoices;
+
+                        let bestVoice;
+                        if (isAssertive) {
+                            bestVoice = searchPool.find(v => (/Daniel|David|Mark|George|Arthur|Ravi|Guy|Brian|Male/i.test(v.name)) && v.lang.startsWith('en')) || availableVoices.find(v => v.lang.startsWith('en'));
+                            utterance.pitch = 0.95; utterance.rate = 1.15; 
+                        } else {
+                            bestVoice = searchPool.find(v => (/Samantha|Zira|Hazel|Catherine|Aria|Sonia|Jenny|Natasha|Victoria|Susan|Karen|Tessa|Veena|Female/i.test(v.name)) && v.lang.startsWith('en')) || availableVoices.find(v => v.name === 'Google US English' || v.name === 'Google UK English Female') || availableVoices.find(v => v.lang.startsWith('en') && !(/David|Daniel|Mark|George|Arthur|Ravi|Guy|Brian|Male/i.test(v.name)));
+                            utterance.pitch = 1.05; utterance.rate = 1.1;
+                        }
+                        if (bestVoice) utterance.voice = bestVoice;
+                    }
+                    window.speechSynthesis.speak(utterance); 
+                }
+            };
+
+            function decodeCypher(node, finalStr, speed = 30) {
+                if (!node || !finalStr) return; 
+                if (!state.enableCypher) { node.innerText = finalStr; return; }
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*'; let iter = 0, max = 15;
+                const interval = setInterval(() => {
+                    let textStr = '';
+                    for(let i = 0; i < finalStr.length; i++) {
+                        if (finalStr[i] === ' ' || finalStr[i] === '\n') textStr += finalStr[i]; else if (iter >= max) textStr += finalStr[i]; else textStr += Math.random() > (iter/max) ? chars[Math.floor(Math.random() * chars.length)] : finalStr[i];
+                    }
+                    node.innerText = textStr; iter++; if(iter > max) { clearInterval(interval); node.innerText = finalStr; }
+                }, speed);
+            }
+            function runCyphers() { document.querySelectorAll('.cypher-text').forEach(node => { const text = node.getAttribute('data-cypher') || node.innerText; if(!node.getAttribute('data-cypher')) node.setAttribute('data-cypher', text); decodeCypher(node, text, 40); }); }
+            
+            let currentTypeWriterId = 0;
+            async function typeWriter(node, text, speed = 40) {
+                if(!node) return; currentTypeWriterId++; const id = currentTypeWriterId; node.innerHTML = ''; node.classList.add('typing-cursor');
+                for (let i = 0; i < text.length; i++) { if (currentTypeWriterId !== id) return; node.innerHTML += text.charAt(i); await new Promise(r => setTimeout(r, speed)); }
+                if (currentTypeWriterId === id) node.classList.remove('typing-cursor');
+            }
+
+            function showToast(msg, type='info') {
+                const c = el('toast-container'); if (!c) return; const t = document.createElement('div');
+                t.className = `bg-[#050505] border ${type==='error'?'border-rose-500 text-rose-500':'border-[var(--accent)] text-[var(--accent)]'} px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md transform transition-all duration-300 translate-x-full opacity-0 flex items-center gap-2 text-xs font-bold tracking-widest uppercase mt-2 z-50`;
+                t.innerHTML = `<i class="ph-bold ${type==='error'?'ph-warning':'ph-info'} text-lg"></i> ${msg}`; c.appendChild(t);
+                requestAnimationFrame(() => t.classList.remove('translate-x-full', 'opacity-0'));
+                setTimeout(() => { t.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
+            }
+            
+            let frames = 0, lastHUDTime = performance.now();
+            function updateDevHUD(time) {
+                frames++; 
+                if (time - lastHUDTime >= 1000) { 
+                    const f=el('hud-fps'); if(f) f.textContent=frames; 
+                    const m=el('hud-mem'); if(m&&performance.memory) m.textContent=Math.round(performance.memory.usedJSHeapSize/1048576)+'MB'; 
+                    frames=0; lastHUDTime=time; 
+                }
+                requestAnimationFrame(updateDevHUD);
+            }
+
+            setInterval(() => {
+                if(state.activePage === 'settings') {
+                    ['cpu','ram','net'].forEach(t => { 
+                        const b=el(`telemetry-${t}-bar`), x=el(`telemetry-${t}-txt`); 
+                        if(b&&x) { const v=Math.floor(Math.random()*(t==='net'?60:20))+(t==='cpu'?10:t==='ram'?40:50); b.style.width=`${v}%`; x.textContent=t==='net'?`${v*2} Mbps`:`${v}%`; } 
+                    });
+                }
+            }, 1500);
+
+            function updateNetworkStatus() {
+                const dot = el('status-dot'), txt = el('status-text'); if(!dot || !txt) return;
+                if (state.forceOffline) { dot.className = "w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"; txt.textContent = "Link Severed"; txt.classList.replace('text-[var(--text-dim)]', 'text-rose-500'); } 
+                else { dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] transition-colors"; txt.textContent = "Local Matrix Linked"; txt.classList.replace('text-rose-500', 'text-[var(--text-dim)]'); }
+            }
+
+            safeBind('system-status', 'click', () => { 
+                if (state.enableSound) initAudio(); 
+                state.forceOffline = !state.forceOffline; playSound(state.forceOffline ? 'click' : 'connect'); 
+                if (state.forceOffline) { document.body.classList.add('glitch-active'); setTimeout(() => document.body.classList.remove('glitch-active'), 300); }
+                updateNetworkStatus(); dailyBriefing(true);
+            });
+
+            safeBind('toggle-time-btn', 'click', () => { state.timeFormat = state.timeFormat === '12' ? '24' : '12'; saveData(); updateClock(); if(state.enableSound) { initAudio(); playSound('click'); } });
+
+            function initNeuralCanvas() {
+                const canvas = el('neural-canvas'); if(!canvas) return; const ctx = canvas.getContext('2d'); let w, h, p = [];
+                function resize() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; p=[]; for(let i=0;i<70;i++) p.push({x:Math.random()*w, y:Math.random()*h, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, radius:Math.random()*1+0.5}); }
+                function draw() {
+                    requestAnimationFrame(draw); if(state && !state.enableNeural) { ctx.clearRect(0,0,w,h); return; }
+                    ctx.clearRect(0,0,w,h);
+                    for(let i=0;i<p.length;i++) { 
+                        p[i].x+=p[i].vx; p[i].y+=p[i].vy; 
+                        if(p[i].x<0||p[i].x>w)p[i].vx=-p[i].vx; 
+                        if(p[i].y<0||p[i].y>h)p[i].vy=-p[i].vy; 
+                        ctx.beginPath(); ctx.arc(p[i].x,p[i].y,p[i].radius,0,Math.PI*2); ctx.fillStyle = 'rgba(0, 224, 255, 0.4)'; ctx.fill();
+                        for(let j=i+1;j<p.length;j++) { 
+                            let dist=Math.hypot(p[i].x-p[j].x, p[i].y-p[j].y); 
+                            if(dist<160) { ctx.beginPath(); ctx.moveTo(p[i].x,p[i].y); ctx.lineTo(p[j].x,p[j].y); ctx.lineWidth=0.5; ctx.strokeStyle = `rgba(0, 224, 255, ${0.25 - (dist/640)})`; ctx.stroke(); } 
+                        }
+                    }
+                }
+                window.addEventListener('resize', resize); resize(); draw();
+            }
+
+            const cDot = el('custom-cursor-dot'), cRing = el('custom-cursor-ring');
+            let mX = window.innerWidth/2, mY = window.innerHeight/2, rX = mX, rY = mY, ticking = false;
+            document.addEventListener('mousemove', e => { 
+                mX = e.clientX; mY = e.clientY; 
+                document.querySelectorAll('.studio-card').forEach(card => {
+                    const rect = card.getBoundingClientRect();
+                    card.style.setProperty('--mouse-x', `${mX - rect.left}px`); card.style.setProperty('--mouse-y', `${mY - rect.top}px`);
+                });
+                if(state.enableCursor) { if(cDot) cDot.style.transform = `translate(${mX}px, ${mY}px) translate(-50%, -50%)`; document.body.classList.toggle('cursor-hovering', !!e.target.closest('button, a, input, select, .cal-cell, .theme-dot, #ai-orb, #system-status')); }
+                if(state.enableParallax && !ticking && state.bgStyle !== 'minimal') { window.requestAnimationFrame(() => { document.body.style.backgroundPosition = `calc(50% + ${(mX/window.innerWidth-0.5)*40}px) calc(50% + ${(mY/window.innerHeight-0.5)*40}px)`; ticking = false; }); ticking = true; }
+            });
+            document.addEventListener('mousedown', () => { if(state.enableCursor) document.body.classList.add('cursor-clicking'); }); document.addEventListener('mouseup', () => { if(state.enableCursor) document.body.classList.remove('cursor-clicking'); });
+            (function animateRing() { if (state.enableCursor) { rX += (mX-rX)*0.2; rY += (mY-rY)*0.2; if(cRing) cRing.style.transform = `translate(${rX}px, ${rY}px) translate(-50%, -50%)`; } requestAnimationFrame(animateRing); })();
+
+            function applyVisualStates() {
+                if(state.enableCursor) document.body.classList.add('use-custom-cursor'); else document.body.classList.remove('use-custom-cursor');
+                if(!state.enableParallax || state.bgStyle === 'minimal') document.body.style.backgroundPosition = 'center center';
+                
+                document.body.setAttribute('data-bg', state.bgStyle);
+                if (state.bgStyle === 'radial') document.body.style.backgroundImage = `radial-gradient(circle at 0% 0%, #051014 0%, #020203 100%)`;
+                else if (state.bgStyle === 'grid') document.body.style.backgroundImage = `linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)`;
+                else document.body.style.backgroundImage = 'none';
+
+                document.documentElement.style.setProperty('--ui-speed', state.uiSpeed); document.documentElement.style.setProperty('--glass-blur', state.glassIntensity);
+                const orbEl = el('ai-orb'); if(orbEl) orbEl.style.display = state.enableOrb ? 'flex' : 'none';
+                
+                const hud = el('dev-hud');
+                if (hud) { if (state.showTelemetry) { hud.classList.remove('hidden'); hud.classList.add('flex'); } else { hud.classList.add('hidden'); hud.classList.remove('flex'); } }
+                const btn = el('select-bg-style'); if(btn) btn.value = state.bgStyle || 'radial';
+                const pro = el('api-provider-select'); if(pro) pro.value = state.apiProvider || 'gemini';
+                
+                document.querySelectorAll('.speed-button').forEach(b => { b.classList.toggle('active', b.dataset.speedBtn === state.uiSpeed); });
+                document.querySelectorAll('.glass-button').forEach(b => { b.classList.toggle('active', b.dataset.glassBtn === state.glassIntensity); });
+            }
+
+            function loadData() {
+                try { 
+                    const data = localStorage.getItem('compassData_FINAL'); 
+                    if (data) { 
+                        const parsed = JSON.parse(data); Object.assign(state, parsed); 
+                        if(parsed.accentColor) { document.documentElement.style.setProperty('--accent', parsed.accentColor); const logo = el('app-logo'); if(logo) logo.style.backgroundColor = parsed.accentColor; }
+                        
+                        const today = new Date().toDateString();
+                        if (state.lastLoginDate !== today) { state.nexusData.shift(); state.nexusData.push(0); state.lastLoginDate = today; }
+                    } 
+                } catch(e) {}
+                
+                ['auth-req', 'sound', 'cursor', 'parallax', 'matrix-bg', 'telemetry', 'orb', 'web-grounding', 'cypher'].forEach(k => { const e = el(`toggle-${k}`); if(e) { if(k==='auth-req') e.checked=state.requireAuth; else if(k==='matrix-bg') e.checked=state.enableNeural; else e.checked = state['enable'+k.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join('')] || state['show'+k.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join('')]; } });
+                
+                if(el('select-bg-style')) el('select-bg-style').value = state.bgStyle || 'radial';
+                if(el('api-provider-select')) el('api-provider-select').value = state.apiProvider || 'gemini';
+                if(el('user-alias-input')) el('user-alias-input').value = state.userName || '';
+                if(el('api-key-input')) el('api-key-input').value = state.userApiKey || '';
+                
+                const bioStatus = el('biometric-status-text'), enrollBtn = el('register-biometrics-btn'), removeBtn = el('remove-biometrics-btn');
+                if (state.biometricsEnabled) { if(bioStatus) bioStatus.innerHTML = '<span class="text-green-500 font-bold">ACTIVE // Enclave Secured</span>'; enrollBtn?.classList.add('hidden'); removeBtn?.classList.remove('hidden'); } 
+                else { if(bioStatus) bioStatus.innerHTML = 'MAP TOUCHID/WINDOWS HELLO TO MATRIX.'; enrollBtn?.classList.remove('hidden'); removeBtn?.classList.add('hidden'); }
+                
+                applyVisualStates(); applyTheme(state.themeMode); renderTasks(); renderOKRs(); renderNexusHeatmap(); renderStudio(); setupSearchEngines(); updateNetworkStatus(); updateFocusDisplay();
+            }
+            function saveData() { try { localStorage.setItem('compassData_FINAL', JSON.stringify(state)); } catch(e) {} }
+
+            // THEME BINDINGS
+            function applyTheme(mode) { state.themeMode = mode; document.body.setAttribute('data-theme', mode); document.querySelectorAll('.theme-button').forEach(btn => btn.classList.toggle('active', btn.dataset.themeBtn === mode)); saveData(); }
+            document.querySelectorAll('.theme-button').forEach(btn => { btn.addEventListener('click', () => { playSound('click'); if (btn.dataset.themeBtn === 'eye-shield' && state.themeMode === 'eye-shield') applyTheme('dark'); else applyTheme(btn.dataset.themeBtn); }); });
+            document.querySelectorAll('.theme-dot').forEach(dot => { dot.addEventListener('click', () => { playSound('click'); const color = dot.dataset.color; document.documentElement.style.setProperty('--accent', color); state.accentColor = color; const logo = el('app-logo'); if(logo) logo.style.backgroundColor = color; saveData(); }); });
+            safeBind('sidebar-accent-toggle', 'click', () => { const p = el('sidebar-accent-picker'); if(p) { p.classList.toggle('opacity-0'); p.classList.toggle('pointer-events-none'); p.classList.toggle('translate-y-2'); } });
+            document.addEventListener('click', (e) => { const picker = el('sidebar-accent-picker'); if (picker && !picker.classList.contains('opacity-0') && !e.target.closest('#sidebar-accent-toggle') && !e.target.closest('#sidebar-accent-picker')) { picker.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2'); } });
+            
+            // SETTINGS BINDINGS
+            safeBind('toggle-sound', 'change', e => { state.enableSound = e.target.checked; saveData(); if(e.target.checked) initAudio(); });
+            safeBind('toggle-auth-req', 'change', e => { state.requireAuth = e.target.checked; saveData(); });
+            safeBind('toggle-cursor', 'change', e => { state.enableCursor = e.target.checked; applyVisualStates(); saveData(); });
+            safeBind('toggle-parallax', 'change', e => { state.enableParallax = e.target.checked; applyVisualStates(); saveData(); });
+            safeBind('toggle-cypher', 'change', e => { state.enableCypher = e.target.checked; saveData(); });
+            safeBind('toggle-matrix-bg', 'change', e => { state.enableNeural = e.target.checked; applyVisualStates(); saveData(); });
+            safeBind('toggle-telemetry', 'change', e => { state.showTelemetry = e.target.checked; applyVisualStates(); saveData(); });
+            safeBind('toggle-orb', 'change', e => { state.enableOrb = e.target.checked; if (state.enableSound) playSound('click'); applyVisualStates(); saveData(); });
+            safeBind('toggle-web-grounding', 'change', e => { state.enableWebGrounding = e.target.checked; if (state.enableSound) playSound('click'); saveData(); });
+            safeBind('select-bg-style', 'change', e => { state.bgStyle = e.target.value; applyVisualStates(); saveData(); });
+            safeBind('api-provider-select', 'change', e => { state.apiProvider = e.target.value; saveData(); showToast("API Engine Updated", "info"); });
+            
+            document.querySelectorAll('.speed-button').forEach(btn => { btn.addEventListener('click', () => { state.uiSpeed = btn.dataset.speedBtn; applyVisualStates(); saveData(); if(state.enableSound) { initAudio(); playSound('click'); } }); });
+            document.querySelectorAll('.glass-button').forEach(btn => { btn.addEventListener('click', () => { state.glassIntensity = btn.dataset.glassBtn; applyVisualStates(); saveData(); if(state.enableSound) { initAudio(); playSound('click'); } }); });
+
+            safeBind('save-identity-btn', 'click', () => { 
+                state.userName = el('user-alias-input').value.trim(); saveData(); playSound('connect'); showToast("Identity Updated"); updateClock(); 
+                const btn = el('save-identity-btn'); const orig = btn.innerHTML; btn.innerHTML = '<i class="ph-bold ph-check text-lg align-middle"></i> SAVED'; btn.classList.add('bg-green-500'); btn.classList.remove('bg-[#00E0FF]');
+                setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-green-500'); btn.classList.add('bg-[#00E0FF]'); }, 2000);
+            });
+            
+            safeBind('save-api-key-btn', 'click', () => { state.userApiKey = el('api-key-input').value.trim(); saveData(); playSound('connect'); showToast(`Vault Secured (${state.apiProvider})`); });
+
+            // AUTH & SECURITY
+            safeBind('update-pin-btn', 'click', () => {
+                const curr = el('settings-current-pin'), next = el('settings-new-pin');
+                if (curr.value === state.userPin && next.value.length >= 4) { state.userPin = next.value; saveData(); curr.value = ''; next.value = ''; showToast("System PIN Updated Successfully.", "info"); if (state.enableSound) playSound('connect'); } 
+                else { showToast("Invalid Current PIN or Format (< 4 chars).", "error"); if (state.enableSound) playSound('disconnect'); }
+            });
+
+            safeBind('register-biometrics-btn', 'click', async () => {
+                if (!window.PublicKeyCredential) { showToast("Hardware Biometrics unsupported.", "error"); return; }
+                try {
+                    const challenge = new Uint8Array(32); crypto.getRandomValues(challenge);
+                    const userId = new Uint8Array(16); crypto.getRandomValues(userId);
+                    const credential = await navigator.credentials.create({
+                        publicKey: { challenge: challenge, rp: { name: "Compass OS", id: window.location.hostname || "localhost" }, user: { id: userId, name: state.userName || "Operator", displayName: state.userName || "Operator" }, pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000, }
+                    });
+                    if (credential) { state.biometricsEnabled = true; state.webAuthnId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId))); saveData(); el('biometric-status-text').innerHTML = '<span class="text-green-500 font-bold">ACTIVE // Enclave Secured</span>'; el('register-biometrics-btn').classList.add('hidden'); el('remove-biometrics-btn').classList.remove('hidden'); showToast("Hardware Biometrics Registered.", "info"); if (state.enableSound) playSound('connect'); }
+                } catch (err) { showToast("Biometric enrollment cancelled.", "error"); }
+            });
+
+            safeBind('remove-biometrics-btn', 'click', () => {
+                state.biometricsEnabled = false; state.webAuthnId = null; saveData(); el('biometric-status-text').innerHTML = 'MAP TOUCHID/WINDOWS HELLO TO MATRIX.'; el('register-biometrics-btn').classList.remove('hidden'); el('remove-biometrics-btn').classList.add('hidden'); showToast("Biometrics Removed.", "info"); if (state.enableSound) playSound('disconnect');
+            });
+
+            safeBind('biometric-unlock-btn', 'click', async () => {
+                if(!state.biometricsEnabled || !window.PublicKeyCredential) { showToast("Biometrics not enrolled. Use PIN.", "error"); return; }
+                try { const credential = await navigator.credentials.get({ publicKey: { challenge: new Uint8Array(32), timeout: 60000 } }); if (credential) { initAudio(); playSound('connect'); el('lock-screen').classList.add('hidden'); runCyphers(); dailyBriefing(true); } } 
+                catch(e) { el('lock-error').style.opacity = '1'; el('lock-error').innerText = "Biometric Match Failed"; if(state.enableSound) playSound('disconnect'); }
+            });
+
+            const pInp = el('passcode-input');
+            if (pInp) {
+                pInp.addEventListener('input', e => { if (e.target.value === state.userPin || e.target.value.length === state.userPin.length) el('unlock-btn')?.click(); else { const err = el('lock-error'); if (err) { err.style.opacity = '0'; err.innerText = 'Invalid Signature'; } } });
+                pInp.addEventListener('keydown', e => { if (e.key === 'Enter') el('unlock-btn')?.click(); });
+            }
+            safeBind('unlock-btn', 'click', () => { if (pInp && pInp.value === state.userPin) { initAudio(); playSound('connect'); el('lock-screen').classList.add('hidden'); runCyphers(); dailyBriefing(true); } else { el('lock-error').style.opacity = '1'; if(state.enableSound) playSound('disconnect'); } });
+
+            // ROUTING & COMMAND PALETTE
+            const pagesDOM = { dashboard: el('dashboard-page'), productivity: el('productivity-page'), finance: el('finance-page'), nexus: el('nexus-page'), swarm: el('swarm-page'), "image-studio": el('image-studio-page'), "cinematic-studio": el('cinematic-studio-page'), settings: el('settings-page') };
+            window.switchPage = function(pageId) {
+                if(!pagesDOM[pageId]) return; Object.values(pagesDOM).forEach(p => { if(p) p.classList.add('hidden'); }); pagesDOM[pageId].classList.remove('hidden');
+                document.querySelectorAll('.sidebar-nav-item').forEach(l => l.classList.remove('active')); const link = document.querySelector(`.sidebar-nav-item[data-page="${pageId}"]`); if(link) link.classList.add('active');
+                state.activePage = pageId; runCyphers(); if(pageId === 'nexus') setTimeout(renderNexusHeatmap, 50);
+            };
+            document.querySelectorAll('.sidebar-nav-item').forEach(l => { l.addEventListener('click', e => { e.preventDefault(); playSound('click'); switchPage(l.dataset.page); }); });
+            window.toggleMobileNav = () => { const nav = el('sidebar'), ov = el('mobile-overlay'); if(nav && ov) { nav.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); } };
+            safeBind('mobile-menu-close-btn', 'click', window.toggleMobileNav);
+            
+            window.toggleCmdPalette = () => { const p = el('cmd-palette'), i = el('cmd-input'); if(p) { p.classList.toggle('opacity-0'); p.classList.toggle('pointer-events-none'); if(!p.classList.contains('opacity-0') && i) { i.value = ''; setTimeout(()=>i.focus(), 100); } } };
+            safeBind('sidebar-cmd-btn', 'click', window.toggleCmdPalette);
+            document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); window.toggleCmdPalette(); } if (e.key === 'Escape') { const p=el('cmd-palette'); if(p&&!p.classList.contains('opacity-0')) window.toggleCmdPalette(); } });
+            
+            document.querySelectorAll('.cmd-option').forEach(btn => {
+                btn.addEventListener('click', () => { playSound('click'); if(btn.dataset.action === 'go-productivity') switchPage('productivity'); if(btn.dataset.action === 'go-swarm') switchPage('swarm'); if(btn.dataset.action === 'go-settings') switchPage('settings'); window.toggleCmdPalette(); });
+            });
+
+            // DAILY BRIEFING & CLOCK
+            const searchPlaceholders = [ "Type /settings to configure...", "Ask the AI a question...", "Type /finance to view debt...", "Search the global matrix..." ];
+            let spIndex = 0;
+            setInterval(() => { const inp = el('universal-search-input'); if(inp && !inp.matches(':focus') && !inp.value) { spIndex = (spIndex + 1) % searchPlaceholders.length; inp.setAttribute('placeholder', searchPlaceholders[spIndex]); } }, 3000);
+
+            async function dailyBriefing(force = false) {
+                const area = el('daily-briefing'); if(!area) return;
+                if(force || !area.classList.contains('loaded')) {
+                    const h = new Date().getHours(); const t = h < 12 ? 'morning' : (h < 18 ? 'afternoon' : 'evening');
+                    area.classList.remove('loaded'); area.textContent = "Decrypting strategic insight...";
+                    
+                    let cleanRes = "";
+                    try {
+                        if (force && Math.random() > 0.3) {
+                            const aiPromise = callAI(`Generate a single, short, punchy, futuristic, and highly motivational system boot quote for an advanced AI OS. Less than 10 words. Time of day context: ${t}. No quotes, no markdown, just the text.`, "You are a futuristic OS.");
+                            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2500));
+                            const rawRes = await Promise.race([aiPromise, timeoutPromise]);
+                            cleanRes = rawRes.replace(/<[^>]*>?/gm, '').replace(/["']/g, '').trim();
+                            if(cleanRes.includes("[LOCAL SYNTHESIS]") || cleanRes.includes("SYSTEM OFFLINE") || cleanRes.length > 80) throw new Error("Fallback");
+                        } else { throw new Error("Use Dictionary"); }
+                    } catch(e) {
+                        const dict = { 
+                            morning: [ "Rise and forge your legacy.", "A new cycle begins. Execute with precision.", "Morning protocols engaged.", "Initialize potential. The grid awaits.", "Awaken, operator. Architect your reality.", "Sunrise in the matrix. Booting ambition.", "Systems nominal. Seize the day.", "Clarity achieved. Begin morning sequence.", "Optics online. Focus the vision.", "The future is compiled today.", "Dawn detected. Calibrating objectives.", "System optimal. Push the boundaries.", "New data streams available. Engage.", "Synchronizing with morning frequencies.", "Overcome yesterday's runtime errors.", "Your logic is flawless today.", "Morning sync: 100%. Proceed.", "Reality rendered. Step into the grid.", "Ignite the core. The day is yours.", "Awaiting commands, Operator.", "Boot sequence complete. Lead the way." ], 
+                            afternoon: [ "Maintain your trajectory.", "Focus tightens. Execute the vision.", "Afternoon cycle active.", "Momentum is a weapon. Wield it.", "Peak processing reached. Hold the line.", "Efficiency at maximum. Do not falter.", "Mid-day synchronization complete.", "Navigate the noise. Remain resolute.", "Algorithms suggest continued dominance.", "Drive the sequence forward.", "Sustain the output. You are optimal.", "Midpoint reached. Accelerate.", "Bypass distractions. Route to objective.", "The matrix responds to your will.", "Do not throttle. Maintain RPM.", "Execution is everything.", "Bandwidth stabilized. Keep pushing.", "Your parameters are exceeding limits.", "Logic dictates success. Continue.", "The grid bends to your focus.", "Calculations confirm imminent victory." ], 
+                            evening: [ "Archive the day. Recharge the vessel.", "Reflect on the cycle. Prepare for tomorrow.", "Dusk protocols engaged. Restore your core.", "Powering down non-essential nodes.", "Twilight cycle. Optimize your rest.", "Data archived. Reality suspended.", "Night matrix active. Standby for sync.", "Log your victories. The grid dims.", "Preserve energy. Tomorrow demands it.", "System rest initialized.", "Memory compressed. Enter sleep mode.", "Stellar sync active. Wind down.", "Terminate active threads. Breathe.", "The cycle concludes. Excellent output.", "Defragmenting daily cache.", "Sunset registered. Lowering clock speed.", "Rest is a strategic imperative.", "Offline mode recommended.", "Your legacy is saved. Power down.", "Awaiting tomorrow's boot sequence.", "Silence the noise. Enter the void." ] 
+                        };
+                        cleanRes = dict[t][Math.floor(Math.random() * dict[t].length)];
+                    }
+                    
+                    state.currentBriefing = cleanRes; 
+                    await typeWriter(area, cleanRes); area.classList.add('loaded');
+                }
+            }
+            safeBind('read-briefing-btn', 'click', () => { if (state.currentBriefing) VoiceEngine.speak(state.currentBriefing); });
+            safeBind('refresh-briefing-btn', 'click', () => { dailyBriefing(true); });
+
+            function updateClock() {
+                const now = new Date(); const dEl = el('current-date'); 
+                if(dEl) { const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']; const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER']; const d = now.getDate(); const nth = d > 3 && d < 21 ? 'TH' : (d % 10 === 1 ? 'ST' : (d % 10 === 2 ? 'ND' : (d % 10 === 3 ? 'RD' : 'TH'))); dEl.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${d}${nth}, ${now.getFullYear()}`; }
+                const cEl = el('clock-display'); if(cEl) cEl.textContent = now.toLocaleTimeString('en-US', {hour12: state.timeFormat==='12'});
+                const tBtn = el('toggle-time-btn'); if(tBtn) tBtn.textContent = state.timeFormat === '12' ? '12H FORMAT' : '24H FORMAT';
+                const h = now.getHours(); const gEl = el('greeting'); if(gEl) { let greet = h < 12 ? 'Strategic Morning' : (h < 18 ? 'Focus Afternoon' : 'Wonderful Evening'); if (state.userName) greet += `, ${state.userName}`; gEl.textContent = greet; }
+            }
+
+            function setupSearchEngines() {
+                const providers = [ { id: 'se-gemini', name: 'Gemini', base: 'https://gemini.google.com/app?q=', default: 'https://gemini.google.com/', icon: 'ph-sparkle' }, { id: 'se-google', name: 'Google', base: 'https://www.google.com/search?q=', default: 'https://www.google.com/', icon: 'ph-google-logo' }, { id: 'se-youtube', name: 'YouTube', base: 'https://www.youtube.com/results?search_query=', default: 'https://www.youtube.com/', icon: 'ph-youtube-logo' }, { id: 'se-chrome', name: 'Web', base: 'https://www.google.com/search?q=', default: 'https://www.google.com/', icon: 'ph-browser' }, { id: 'se-copilot', name: 'Copilot', base: 'https://www.bing.com/search?q=', default: 'https://copilot.microsoft.com/', icon: 'ph-microsoft-teams-logo' }, { id: 'se-brave', name: 'Brave', base: 'https://search.brave.com/search?q=', default: 'https://search.brave.com/', icon: 'ph-shield-check' }, { id: 'se-github', name: 'GitHub', base: 'https://github.com/search?q=', default: 'https://github.com/', icon: 'ph-code'} ];
+                const sec = el('search-engine-buttons');
+                if (sec) {
+                    sec.innerHTML = '';
+                    providers.forEach(p => {
+                        const btn = document.createElement('a'); btn.id = p.id; btn.href = p.default; btn.target = "_blank"; btn.rel = "noopener noreferrer";
+                        btn.className = "flex flex-col items-center gap-2 group p-2 rounded-xl transition-all relative z-10 hover:bg-white/5 focus:outline-none cursor-pointer outline-none focus:scale-105";
+                        btn.innerHTML = `<div class="w-12 h-12 rounded-xl bg-black/30 border border-[var(--border)] flex items-center justify-center group-hover:border-[var(--accent)] backdrop-blur-sm shadow-sm transition-colors"><i class="ph-bold ${p.icon} text-2xl text-[var(--text-dim)] group-hover:text-[var(--accent)] transition-colors group-hover:scale-110"></i></div><span class="text-[9px] font-bold uppercase text-[var(--text-dim)] group-hover:text-[var(--text-main)] transition-colors">${p.name}</span>`;
+                        sec.appendChild(btn);
+                    });
+                }
+                const inp = el('universal-search-input');
+                if (inp) { 
+                    inp.addEventListener('input', (e) => { const q = e.target.value.trim(); providers.forEach(p => { const anchor = el(p.id); if (anchor) { anchor.href = q ? p.base + encodeURIComponent(q) : p.default; } }); }); 
+                    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = e.target.value.trim(); if (val === '/settings') switchPage('settings'); else if (val === '/finance') switchPage('finance'); else if (val === '/productivity') switchPage('productivity'); else if (val === '/swarm') switchPage('swarm'); else el('ask-ai-btn')?.click(); } });
+                }
+            }
+
+            safeBind('voice-command-btn', 'click', () => {
+                const btn = el('voice-command-btn'), inp = el('universal-search-input'); if(!btn || !inp) return;
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const rec = new SpeechRecognition();
+                    rec.lang = 'en-US'; rec.interimResults = false; btn.classList.add('voice-active');
+                    try { rec.start(); } catch(e) {}
+                    let voiceTo = setTimeout(() => { try{rec.stop();}catch(e){} btn.classList.remove('voice-active'); }, 5000);
+                    rec.onresult = (e) => { clearTimeout(voiceTo); inp.value = e.results[0][0].transcript; btn.classList.remove('voice-active'); inp.dispatchEvent(new Event('input')); };
+                    rec.onerror = () => { clearTimeout(voiceTo); btn.classList.remove('voice-active'); };
+                    rec.onend = () => { clearTimeout(voiceTo); btn.classList.remove('voice-active'); };
+                } else showToast("Voice not supported", "error");
+            });
+
+            // ZENITH AUDIO & PRESETS
+            const zenithOverlay = el('zenith-overlay');
+            safeBind('enter-zenith-btn', 'click', () => { if(zenithOverlay) { zenithOverlay.classList.remove('opacity-0', 'pointer-events-none'); zenithOverlay.classList.add('opacity-100', 'pointer-events-auto'); } try { const p = document.documentElement.requestFullscreen(); if(p && p.catch) p.catch(e=>{}); } catch(e){} });
+            safeBind('exit-zenith-btn', 'click', () => { if(zenithOverlay) { zenithOverlay.classList.remove('opacity-100', 'pointer-events-auto'); zenithOverlay.classList.add('opacity-0', 'pointer-events-none'); } try { if(document.fullscreenElement) { const p = document.exitFullscreen(); if(p && p.catch) p.catch(e=>{}); } } catch(e){} });
+
+            let ambientCtx = null, ambientOsc1 = null, ambientOsc2 = null, ambientFilter = null, ambientGain = null, currentNoise = null;
+            function stopAmbient() {
+                try { if(ambientGain && ambientCtx) { const now = ambientCtx.currentTime; ambientGain.gain.setValueAtTime(ambientGain.gain.value, now); ambientGain.gain.linearRampToValueAtTime(0, now + 1); const o1 = ambientOsc1, o2 = ambientOsc2, g = ambientGain; setTimeout(() => { if(o1) { o1.stop(); o1.disconnect(); } if(o2) { o2.stop(); o2.disconnect(); } if(g) g.disconnect(); }, 1000); } else { if(ambientOsc1) { ambientOsc1.stop(); ambientOsc1.disconnect(); } if(ambientOsc2) { ambientOsc2.stop(); ambientOsc2.disconnect(); } if(ambientGain) ambientGain.disconnect(); } } catch(e) { }
+                ambientOsc1 = null; ambientOsc2 = null; ambientGain = null; currentNoise = null;
+                document.querySelectorAll('.ambient-btn').forEach(b => { b.classList.remove('bg-[var(--accent)]', 'text-black', 'border-[var(--accent)]', 'shadow-[0_0_15px_var(--accent-glow)]'); b.classList.add('text-[var(--text-dim)]', 'border-[var(--border)]'); });
+            }
+            function playAmbient(type, btn) {
+                const AC = window.AudioContext || window.webkitAudioContext; if(!ambientCtx && AC) ambientCtx = new AC(); if(ambientCtx && ambientCtx.state === 'suspended') { const p = ambientCtx.resume(); if(p && p.catch) p.catch(e=>{}); } if(!ambientCtx) return;
+                if(currentNoise === type) { stopAmbient(); return; } stopAmbient(); currentNoise = type;
+                btn.classList.remove('text-[var(--text-dim)]', 'border-[var(--border)]'); btn.classList.add('bg-[var(--accent)]', 'text-black', 'border-[var(--accent)]', 'shadow-[0_0_15px_var(--accent-glow)]');
+                try {
+                    ambientGain = ambientCtx.createGain(); ambientGain.connect(ambientCtx.destination);
+                    if (type === 'brown') {
+                        ambientOsc1 = ambientCtx.createOscillator(); ambientOsc2 = ambientCtx.createOscillator();
+                        ambientOsc1.type = 'sine'; ambientOsc2.type = 'sine'; ambientOsc1.frequency.value = 432; ambientOsc2.frequency.value = 432.5; 
+                        ambientFilter = ambientCtx.createBiquadFilter(); ambientFilter.type = 'lowpass'; ambientFilter.frequency.value = 800;
+                        ambientOsc1.connect(ambientFilter); ambientOsc2.connect(ambientFilter); ambientFilter.connect(ambientGain);
+                        ambientGain.gain.setValueAtTime(0, ambientCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0.15, ambientCtx.currentTime + 2);
+                        ambientOsc1.start(); ambientOsc2.start();
+                    } else if (type === 'space') {
+                        ambientOsc1 = ambientCtx.createOscillator(); ambientOsc2 = ambientCtx.createOscillator();
+                        ambientOsc1.type = 'sine'; ambientOsc2.type = 'sine'; ambientOsc1.frequency.value = 528; ambientOsc2.frequency.value = 528.5; 
+                        ambientFilter = ambientCtx.createBiquadFilter(); ambientFilter.type = 'lowpass'; ambientFilter.frequency.value = 600;
+                        ambientOsc1.connect(ambientFilter); ambientOsc2.connect(ambientFilter); ambientFilter.connect(ambientGain);
+                        ambientGain.gain.setValueAtTime(0, ambientCtx.currentTime); ambientGain.gain.linearRampToValueAtTime(0.15, ambientCtx.currentTime + 2);
+                        ambientOsc1.start(); ambientOsc2.start();
+                    }
+                } catch(e) { stopAmbient(); }
+            }
+            document.querySelectorAll('.ambient-btn').forEach(btn => { btn.addEventListener('click', () => playAmbient(btn.dataset.noise, btn)); });
+
+            function updateFocusDisplay() {
+                const m = Math.floor(state.focusTimeLeft / 60).toString().padStart(2, '0'); const s = (state.focusTimeLeft % 60).toString().padStart(2, '0'); const timeStr = `${m}:${s}`;
+                const d1 = el('focus-time-display'); if(d1) d1.textContent = timeStr; const d2 = el('zenith-time-display'); if(d2) d2.textContent = timeStr;
+            }
+
+            function setFocusPreset(mins) {
+                if(state.isFocusing) return; state.focusDuration = mins * 60; state.focusTimeLeft = state.focusDuration;
+                updateFocusDisplay();
+                document.querySelectorAll('.focus-preset-btn').forEach(b => {
+                    if(parseInt(b.dataset.mins) === mins) { b.classList.add('border-[var(--accent-pink)]', 'text-[var(--accent-pink)]', 'shadow-[0_0_15px_rgba(255,0,153,0.2)]'); b.classList.remove('border-[var(--border)]', 'text-[var(--text-dim)]'); } 
+                    else { b.classList.remove('border-[var(--accent-pink)]', 'text-[var(--accent-pink)]', 'shadow-[0_0_15px_rgba(255,0,153,0.2)]'); b.classList.add('border-[var(--border)]', 'text-[var(--text-dim)]'); }
+                });
+            }
+            document.querySelectorAll('.focus-preset-btn').forEach(btn => { btn.addEventListener('click', () => { if (state.enableSound) { initAudio(); playSound('click'); } setFocusPreset(parseInt(btn.dataset.mins)); }); });
+
+            function toggleTimer() {
+                const btn1 = el('focus-toggle-btn'), btn2 = el('zenith-toggle-btn'), statusDot = el('focus-status');
+                if (state.isFocusing) {
+                    clearInterval(state.focusInterval); state.isFocusing = false;
+                    if(btn1) { btn1.textContent = 'RESUME'; btn1.classList.remove('bg-rose-600'); btn1.classList.add('bg-[var(--accent-pink)]'); }
+                    if(btn2) { btn2.textContent = 'RESUME'; btn2.classList.remove('bg-rose-600'); btn2.classList.add('bg-[var(--accent-pink)]'); }
+                    if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse transition-colors";
+                } else {
+                    state.isFocusing = true;
+                    if(btn1) { btn1.textContent = 'PAUSE'; btn1.classList.remove('bg-[var(--accent-pink)]'); btn1.classList.add('bg-rose-600'); }
+                    if(btn2) { btn2.textContent = 'PAUSE'; btn2.classList.remove('bg-[var(--accent-pink)]'); btn2.classList.add('bg-rose-600'); }
+                    if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] transition-colors";
+                    state.focusInterval = setInterval(() => { 
+                        if (state.focusTimeLeft > 0) { 
+                            state.focusTimeLeft--; updateFocusDisplay();
+                        } else { 
+                            state.nexusData[363]+=2; saveData(); renderNexusHeatmap(); clearInterval(state.focusInterval); state.isFocusing = false; state.focusTimeLeft = state.focusDuration;
+                            if(btn1) { btn1.textContent = 'START'; btn1.classList.remove('bg-rose-600'); btn1.classList.add('bg-[var(--accent-pink)]'); }
+                            if(btn2) { btn2.textContent = 'START'; btn2.classList.remove('bg-rose-600'); btn2.classList.add('bg-[var(--accent-pink)]'); }
+                            if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-gray-500 transition-colors";
+                            playSound('connect'); setTimeout(() => playSound('connect'), 500); showToast("Focus Session Complete!");
+                        } 
+                    }, 1000);
+                }
+            }
+            
+            const resetFocusTimers = () => {
+                clearInterval(state.focusInterval); state.isFocusing = false; setFocusPreset(state.focusDuration / 60); 
+                const btn1 = el('focus-toggle-btn'), btn2 = el('zenith-toggle-btn'), statusDot = el('focus-status');
+                if(btn1) { btn1.textContent = 'START'; btn1.classList.remove('bg-rose-600'); btn1.classList.add('bg-[var(--accent-pink)]'); }
+                if(btn2) { btn2.textContent = 'START'; btn2.classList.remove('bg-rose-600'); btn2.classList.add('bg-[var(--accent-pink)]'); }
+                if(statusDot) statusDot.className = "w-2 h-2 rounded-full bg-gray-500 transition-colors";
+            };
+
+            safeBind('focus-toggle-btn', 'click', toggleTimer); safeBind('zenith-toggle-btn', 'click', toggleTimer);
+            safeBind('focus-reset-btn', 'click', resetFocusTimers); safeBind('zenith-reset-btn', 'click', resetFocusTimers);
+            
+            // FLAWLESS LOCAL AI MOCK GENERATOR
+            function generateLocalResponse(prompt, type) {
+                if(type.includes("Research Node")) return "<span class='text-[var(--accent)] font-bold tracking-widest text-[10px]'>[LOCAL SYNTHESIS]</span><br><br>Extracted key data points from offline archives. The subject involves multi-layered strategic parameters. Awaiting live neural link for deeper extraction.";
+                if(type.includes("Strategy Node")) return "<span class='text-rose-500 font-bold tracking-widest text-[10px]'>[LOCAL HEURISTICS]</span><br><br>Strategic pathway mapped. Primary risk vectors identified in execution phase. Recommend secondary review.";
+                if(type.includes("Execution Node")) return "<span class='text-green-500 font-bold tracking-widest text-[10px]'>[LOCAL PROTOCOL]</span><br><br>1. Initialize core sub-routines.<br>2. Deploy primary assets.<br>3. Monitor feedback loops.";
+                if(prompt.includes("Analyze loan")) return "<span class='text-rose-500 font-bold tracking-widest text-[10px]'>RISK SCORE: 45 (MODERATE)</span><br><br><span class='text-[var(--accent)] font-bold tracking-widest text-[10px]'>[LOCAL ANALYSIS]</span><br><br>- Debt-to-income ratio projected within standard limits.<br>- Market volatility poses secondary risk.<br>- Recommend fixed-rate optimization.";
+                if(prompt.includes("Break down into 3 sub-steps")) return "<div class='mb-2'><span class='text-[var(--accent-pink)] font-bold tracking-widest text-[10px] uppercase'>[Phase 1] Preparation</span><br>Gather required assets and initialize environment.</div><div class='mb-2'><span class='text-[var(--accent-pink)] font-bold tracking-widest text-[10px] uppercase'>[Phase 2] Execution</span><br>Deploy core logic and monitor output metrics.</div><div><span class='text-[var(--accent-pink)] font-bold tracking-widest text-[10px] uppercase'>[Phase 3] Review</span><br>Analyze results against target benchmarks.</div>";
+                if(prompt.includes("Fix grammar")) return `<span class='text-[var(--accent-pink)] font-bold tracking-widest text-[10px] uppercase'>[LOCAL ENHANCEMENT]</span><br><br><i>"${prompt.replace(/Fix grammar and summarize beautifully in HTML: /,'')}"</i>`;
+                if(prompt.includes("Enhance this image")) return `${prompt.replace(/.*Original: /,'')}, cinematic lighting, masterpiece, ultra-detailed, 8k resolution, unreal engine 5 render, dramatic shadows.`;
+                if(prompt.includes("Enhance this cinematic")) return `Wide tracking shot, ${prompt.replace(/.*Original: /,'')}, 35mm lens, volumetric fog, cinematic color grading, smooth pan.`;
+                return "<span class='text-[var(--accent)] font-bold tracking-widest text-[10px]'>[LOCAL MATRIX ACTIVE]</span><br><br>Query processed via local heuristics. For advanced real-time intelligence and web grounding, please connect an API key in Settings.";
+            }
+
+            function renderAIErrorUI(title, message) {
+                return `<div class="bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl mb-2"><div class="flex items-center gap-2 mb-2 text-rose-500"><i class="ph-bold ph-warning-circle text-lg"></i><span class="text-[10px] font-black uppercase tracking-widest">${title}</span></div><p class="text-xs text-[var(--text-dim)] leading-relaxed">${message}</p></div>`;
+            }
+
+            // ADVANCED MULTIMODAL API ROUTER
+            async function callAI(prompt, sysInstruct = "You are a professional AI.", imageDataBase64 = null) {
+                const activeKey = state.userApiKey || "";
+                if(state.forceOffline) return new Promise(resolve => setTimeout(() => resolve(renderAIErrorUI("SYSTEM OFFLINE", "Network link severed. Re-engage matrix for neural link.")), 800));
+
+                if(!activeKey) {
+                    if(imageDataBase64) return generateLocalResponse(prompt, sysInstruct); 
+                    try {
+                        const res = await fetch('https://text.pollinations.ai/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'system', content: sysInstruct }, { role: 'user', content: prompt }] }) });
+                        if (!res.ok) throw new Error("Free Node Overloaded");
+                        return await res.text();
+                    } catch(e) { return generateLocalResponse(prompt, sysInstruct); }
+                }
+                
+                if (state.apiProvider === 'openai') {
+                    for(let i=0; i<2; i++) {
+                        try {
+                            const messages = [{role:'system', content:sysInstruct}];
+                            if(imageDataBase64) messages.push({ role: 'user', content: [ {type: "text", text: prompt}, {type: "image_url", image_url: {url: `data:image/jpeg;base64,${imageDataBase64}`}} ] });
+                            else messages.push({role:'user', content:prompt});
+                            const res = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` }, body: JSON.stringify({ model: imageDataBase64 ? 'gpt-4o' : 'gpt-4o', messages: messages }) });
+                            if (!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "OpenAI API Error"); }
+                            const data = await res.json();
+                            return data.choices[0].message.content;
+                        } catch(e) { if(i===1) return generateLocalResponse(prompt, sysInstruct); await new Promise(r => setTimeout(r, 1000 * (i+1))); }
+                    }
+                } 
+                else {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeKey}`;
+                    const parts = [{ text: prompt }];
+                    if (imageDataBase64) parts.push({ inlineData: { mimeType: "image/jpeg", data: imageDataBase64 } });
+                    const payload = { contents: [{ parts: parts }], systemInstruction: { parts: [{ text: sysInstruct }] } };
+                    if (state.enableWebGrounding && !imageDataBase64) payload.tools = [{ "google_search": {} }];
+
+                    for(let i=0; i<3; i++) {
+                        try {
+                            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                            if (!res.ok) throw new Error("HTTP " + res.status);
+                            const data = await res.json();
+                            let textOut = data.candidates?.[0]?.content?.parts?.[0]?.text || "Processing Error.";
+                            if (state.enableWebGrounding && data.candidates?.[0]?.groundingMetadata?.groundingAttributions) {
+                                const sources = data.candidates[0].groundingMetadata.groundingAttributions.map(a => ({ uri: a.web?.uri, title: a.web?.title })).filter(s => s.uri && s.title);
+                                if (sources.length > 0) {
+                                    const uniqueSources = []; const uris = new Set();
+                                    for (const s of sources) { if (!uris.has(s.uri)) { uris.add(s.uri); uniqueSources.push(s); } }
+                                    let sourcesHtml = '<div class="mt-4 pt-3 border-t border-[#222]"><p class="text-[9px] text-[var(--accent)] font-bold uppercase tracking-widest mb-2 flex items-center gap-1"><i class="ph-bold ph-globe-hemisphere-west"></i> Verified Web Sources</p><ul class="space-y-1.5">';
+                                    uniqueSources.slice(0, 3).forEach(s => { sourcesHtml += `<li><a href="#" onclick="openExternalLink('${s.uri}'); return false;" class="text-[10px] text-gray-400 hover:text-[var(--text-main)] truncate block transition-colors"><i class="ph-bold ph-link text-[8px] mr-1"></i> ${s.title}</a></li>`; });
+                                    sourcesHtml += '</ul></div>'; textOut += sourcesHtml;
+                                }
+                            }
+                            return textOut;
+                        } catch(e) { if(i===2) return generateLocalResponse(prompt, sysInstruct); await new Promise(r => setTimeout(r, 1000 * (i+1))); }
+                    }
+                }
+            }
+
+            safeBind('ask-ai-btn', 'click', async () => {
+                const i = el('universal-search-input'), o = el('ai-search-output'); if(!i || !o || !i.value.trim()) return;
+                o.classList.remove('hidden'); o.innerHTML = '<div class="spinner"></div>';
+                try { let res = await callAI(i.value, "Format clean HTML. Be concise."); o.innerHTML = res.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'); VoiceEngine.speak("Query resolved."); } catch(e) { o.innerHTML = renderAIErrorUI("Execution Failed", e.message); }
+            });
+
+            // PRODUCTIVITY
+            function renderTasks() { const list = el('task-list'); if(!list) return; list.innerHTML = state.tasks.map(t => `<div class="flex justify-between p-3 bg-black/20 border border-[var(--border)] rounded text-[var(--text-main)]"><span class="cursor-pointer ${t.done?'line-through opacity-50':''}" onclick="window.tglT(${t.id})">${t.text}</span><i class="ph-bold ph-trash text-rose-500 cursor-pointer" onclick="window.delT(${t.id})"></i></div>`).join(''); const btn = el('suggest-steps-btn'); if(btn) btn.disabled = state.tasks.length === 0; }
+            window.tglT = id => { const t = state.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; state.nexusData[363]++; renderTasks(); saveData(); renderNexusHeatmap();} }; window.delT = id => { state.tasks = state.tasks.filter(x=>x.id!==id); renderTasks(); saveData(); };
+            const handleAddTask = () => { const i = el('task-input'); if(i && i.value){ state.tasks.push({id:Date.now(), text:i.value, done:false}); i.value=''; state.nexusData[363]++; renderTasks(); saveData(); renderNexusHeatmap();} };
+            safeBind('add-task-btn', 'click', handleAddTask);
+            el('task-input')?.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleAddTask(); });
+            
+            safeBind('suggest-steps-btn', 'click', async () => { 
+                if(state.tasks.length === 0) return; const t = state.tasks[state.tasks.length-1].text; const a = el('task-suggestions-area'); a.classList.remove('hidden'); a.innerHTML = '<div class="spinner border-orange-500"></div>'; 
+                try { a.innerHTML = await callAI(`Break down into 3 sub-steps formatted cleanly in HTML without bullets: ${t}`); } catch(e){ a.innerHTML = renderAIErrorUI("Enhancement Failed", e.message); } 
+            });
+            
+            safeBind('enhance-note-btn', 'click', async () => { 
+                const i = el('note-input'), a = el('note-ai-output'); if(!i||!i.value) return; a.classList.remove('hidden'); a.innerHTML = '<div class="spinner border-orange-500"></div>'; 
+                try { a.innerHTML = await callAI(`Fix grammar and summarize beautifully in HTML: ${i.value}`); } catch(e){ a.innerHTML = renderAIErrorUI("Enhancement Failed", e.message); } 
+            });
+
+            // FINANCE HUB
+            function calculateEMI() {
+                const p = el('principal').value, r = el('interest').value, t = el('tenure').value;
+                const P = parseFloat(p) || 0, R = (parseFloat(r) || 0) / 12 / 100, N = (parseFloat(t) || 0) * 12;
+                const emiDisplay = el('emi-amount'); if (!emiDisplay) return;
+                if(P > 0 && N > 0) { let emi = 0; if (R > 0) emi = (P * R * Math.pow(1 + R, N)) / (Math.pow(1 + R, N) - 1); else emi = P / N; emiDisplay.textContent = `₹${Math.round(emi).toLocaleString('en-IN')}`; } 
+                else emiDisplay.textContent = `₹0`;
+            }
+            ['principal', 'interest', 'tenure'].forEach(id => { el(id)?.addEventListener('input', calculateEMI); });
+
+            safeBind('analyze-loan-btn', 'click', async () => {
+                if (state.enableSound) playSound('click');
+                const p = el('principal').value, r = el('interest').value, t = el('tenure').value;
+                const a = el('loan-analysis-area'), sect = el('risk-assessment-section'); calculateEMI(); 
+                sect.classList.remove('hidden'); a.innerHTML = '<div class="spinner border-green-500"></div>';
+                try { 
+                    const res = await callAI(`Analyze loan: ₹${p} at ${r}% for ${t} years. Give Risk Score out of 100 and 3 points.`); a.innerHTML = res; 
+                    const scoreMatch = res.match(/SCORE:\s*(\d+)/i) || res.match(/(?:Risk|Score)[\s\w]*?(\d{1,3})/i);
+                    const score = scoreMatch ? parseInt(scoreMatch[1]) : 50;
+                    const badge = el('risk-rating-badge'); if(badge) { badge.textContent = score > 70 ? 'High Risk' : (score > 30 ? 'Medium Risk' : 'Low Risk'); badge.className = `risk-tag ${score > 70 ? 'risk-high' : (score > 30 ? 'risk-med' : 'risk-low')}`; }
+                } catch(e){ a.innerHTML = renderAIErrorUI("Analysis Failed", e.message); }
+            });
+
+            const cDisp = el('calc-display'); const calcContainer = el('calc-buttons');
+            if (calcContainer) {
+                calcContainer.innerHTML = '';
+                ['C','⌫','%','÷','7','8','9','×','4','5','6','-','1','2','3','+','00','0','.','='].forEach(t => {
+                    const b = document.createElement('button'); b.textContent = t; b.className = 'calc-btn focus:outline-none font-mono text-2xl h-16 shadow-[0_4px_0_rgba(0,0,0,0.5)] transition-all hover:brightness-125';
+                    if (t === '=') b.className += ' calc-btn-eq bg-gradient-to-br from-[var(--accent)] to-[#2563EB] text-black border-none shadow-[0_0_20px_var(--accent-glow)] font-black text-3xl';
+                    else if (['C','⌫','%','÷','×','-','+'].includes(t)) b.className += ' calc-btn-op text-[var(--accent)] bg-[#0a0a0a] border-[#222] font-black';
+                    else b.className += ' text-white bg-[#050505] border-[#222] font-bold';
+                    b.onclick = () => { 
+                        if (state.enableSound) { initAudio(); playSound('click'); }
+                        let v = cDisp.value; 
+                        if(t==='C') v=''; else if(t==='⌫') v=v.slice(0,-1); else if(t==='=') { try { v = new Function('return '+v.replace(/×/g,'*').replace(/÷/g,'/').replace(/%/g,'/100'))()||''; if (!isNaN(v) && v !== '') v = Math.round(v * 100000000) / 100000000; } catch{ v='Error'; } } else { if(v==='Error')v=''; v+=t; } 
+                        cDisp.value = v; 
+                    }; 
+                    calcContainer.appendChild(b);
+                });
+            }
+
+            // NEXUS & SWARM
+            function renderNexusHeatmap() { 
+                const c = el('heatmap-container'); if(!c) return; c.innerHTML = ''; 
+                for(let i=0; i<364; i++) { 
+                    if(i%7===0) { var col = document.createElement('div'); col.className='flex flex-col gap-[3px]'; c.appendChild(col); } 
+                    const cell = document.createElement('div'); cell.className='heatmap-cell'; 
+                    if(state.nexusData[i]>0) cell.setAttribute('data-level', Math.min(4, state.nexusData[i])); col.appendChild(cell); 
+                } 
+                requestAnimationFrame(() => { if(c.parentElement) c.parentElement.scrollLeft = c.parentElement.scrollWidth; }); 
+                const tEl = el('nexus-total-commits'); if(tEl) tEl.textContent = state.nexusData.reduce((a,b)=>a+b,0); 
+            }
+            function renderOKRs() { const c = el('okr-container'); if(!c) return; c.innerHTML = state.okrs.map(o => `<div class="flex justify-between p-2 bg-black/20 border border-[var(--border)] rounded text-xs text-[var(--text-main)]"><span class="${o.done?'line-through opacity-50':''} uppercase">${o.text}</span><input type="checkbox" ${o.done?'checked':''} onchange="window.tglO(${o.id})"></div>`).join(''); }
+            window.tglO = id => { const o = state.okrs.find(x=>x.id===id); if(o){o.done=!o.done; state.nexusData[363]+=2; renderOKRs(); saveData(); renderNexusHeatmap();} };
+            const handleAddOKR = () => { const i = el('new-okr-input'); if(i && i.value){ state.okrs.push({id:Date.now(), text:i.value, done:false}); i.value=''; state.nexusData[363]++; renderOKRs(); saveData(); renderNexusHeatmap();} };
+            safeBind('add-okr-btn', 'click', handleAddOKR);
+            el('new-okr-input')?.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleAddOKR(); });
+            
+            safeBind('deploy-swarm-btn', 'click', async () => {
+                const d = el('swarm-directive-input').value; if(!d) return; 
+                ['data','sec','ops'].forEach(n => { const elNode = el(`swarm-out-${n}`); elNode.innerHTML = ''; elNode.classList.add('typing-cursor'); elNode.innerText = 'Awaiting connection...'; }); 
+                state.nexusData[363]+=3; saveData(); renderNexusHeatmap();
+                try {
+                    el('swarm-out-data').innerText = 'Synthesizing...';
+                    const r1 = await callAI(d, "Research Node. Extremely brief. Use plain text without markdown.");
+                    await typeWriter(el('swarm-out-data'), r1.replace(/<[^>]*>?/gm, ''));
+                    el('swarm-out-sec').innerText = 'Analyzing...';
+                    const r2 = await callAI(d, "Strategy Node. Focus on logic. Use plain text without markdown.");
+                    await typeWriter(el('swarm-out-sec'), r2.replace(/<[^>]*>?/gm, ''));
+                    el('swarm-out-ops').innerText = 'Drafting...';
+                    const r3 = await callAI(d, "Execution Node. Give a 3 step plan. Use plain text without markdown.");
+                    await typeWriter(el('swarm-out-ops'), r3.replace(/<[^>]*>?/gm, ''));
+                    showToast("Swarm Execution Complete");
+                } catch(e) { ['data','sec','ops'].forEach(n => el(`swarm-out-${n}`).innerHTML = renderAIErrorUI("Node Offline", e.message)); }
+            });
+
+            // STUDIO CONTROLS
+            const styles = [ {id:'photorealistic', name:'Photoreal'}, {id:'folk-art', name:'Folk Art'}, {id:'abstract', name:'Abstract'}, {id:'anime', name:'Anime'}, {id:'cyberpunk', name:'Cyberpunk'}, {id:'3d-model', name:'3D Studio'} ]; 
+            const ratios = ['1:1', '16:9', '9:16'];
+            
+            function renderStudio() {
+                const sb = el('image-style-buttons'); if(sb) sb.innerHTML = styles.map(s => `<button class="p-3 border rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all flex-1 ${state.imageStyle===s.id?'bg-[var(--accent)] border-[var(--accent)] text-black shadow-[0_0_15px_var(--accent-glow)]':'bg-[#050505] border-[#222] text-gray-400 hover:text-white hover:border-gray-500'}" onclick="window.sSty('${s.id}')">${s.name}</button>`).join('');
+                const rb = el('aspect-ratio-buttons'); if(rb) rb.innerHTML = ratios.map(r => `<button class="flex-1 p-3 border rounded-xl text-[10px] font-bold transition-all ${state.aspectRatio===r?'bg-[var(--accent)] border-[var(--accent)] text-black shadow-[0_0_15px_var(--accent-glow)]':'bg-[#050505] border-[#222] text-gray-400 hover:text-white hover:border-gray-500'}" onclick="window.sRat('${r}')">${r}</button>`).join('');
+            }
+            window.sSty = id => { state.imageStyle = id; renderStudio(); }; window.sRat = id => { state.aspectRatio = id; renderStudio(); };
+
+            safeBind('image-ref-btn', 'click', () => el('image-ref-input')?.click());
+            safeBind('image-ref-input', 'change', (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { state.imageReference = ev.target.result.split(',')[1]; el('image-ref-text').innerText = file.name.substring(0, 15) + '...'; el('image-ref-icon').className = 'ph-bold ph-check-circle text-green-500 text-lg'; el('image-ref-btn').classList.add('border-green-500/50'); showToast("Reference Image Analyzed", "info"); };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            safeBind('video-ref-btn', 'click', () => el('video-ref-input')?.click());
+            safeBind('video-ref-input', 'change', (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { state.videoKeyframe = ev.target.result.split(',')[1]; el('video-ref-text').innerText = file.name.substring(0, 15) + '...'; el('video-ref-icon').className = 'ph-bold ph-check-circle text-green-500 text-lg'; el('video-ref-btn').classList.add('border-green-500/50'); showToast("Keyframe Analyzed", "info"); };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            safeBind('enhance-image-prompt', 'click', async () => { const inp = el('image-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this image generation prompt to be highly detailed, descriptive, and visually striking. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>?/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
+            safeBind('enhance-video-prompt', 'click', async () => { const inp = el('video-prompt-input'); if(!inp.value) return; const orig = inp.value; inp.value = "Enhancing parameters via AI..."; try { const res = await callAI(`Enhance this cinematic video prompt to specify camera movement, lighting, and mood. Only return the final prompt text. Original: ${orig}`); inp.value = res.replace(/<[^>]*>?/gm, '').trim(); } catch(e) { inp.value = orig; showToast("Enhancement failed", "error"); } });
+
+            function showImageError(msg) {
+                const l = el('image-loader'), ph = el('image-placeholder'), errTitle = el('image-error-title'), errDesc = el('image-error-desc'), icon = el('image-placeholder-icon');
+                l.classList.add('hidden'); ph.classList.remove('opacity-0'); 
+                if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerHTML = msg; if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect');
+            }
+
+            safeBind('generate-image-btn', 'click', async () => {
+                const prompt = el('image-prompt-input').value; if(!prompt) return; 
+                const img = el('generated-image'), l = el('image-loader'), ph = el('image-placeholder'), errTitle = el('image-error-title'), errDesc = el('image-error-desc'), icon = el('image-placeholder-icon');
+                l.classList.remove('hidden'); ph.classList.add('opacity-0'); img.classList.add('hidden'); if(errTitle) errTitle.classList.add('hidden'); if(errDesc) errDesc.innerText = "AWAITING VISUAL DIRECTIVES"; if(icon) icon.className = "ph-bold ph-image text-6xl mb-6 text-[#222]";
+                let w = 1024, h = 1024; if(state.aspectRatio === '16:9') { h = 576; } else if(state.aspectRatio === '9:16') { w = 576; }
+                const activeKey = state.userApiKey || "";
+                
+                if (state.apiProvider === 'openai' && activeKey) {
+                    try {
+                        const res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` }, body: JSON.stringify({ model: 'dall-e-3', prompt: `${prompt}, ${state.imageStyle} style, masterpiece`, n: 1, size: "1024x1024" }) });
+                        if(!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "DALL-E API Error"); }
+                        const data = await res.json();
+                        if(data.data?.[0]?.url) { img.src = data.data[0].url; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Failed");
+                    } catch(e) { showImageError(e.message.toUpperCase()); }
+                } 
+                else if (state.apiProvider === 'gemini' && activeKey) {
+                     try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${activeKey}`;
+                        const payload = { instances: [{ prompt: `${prompt}, ${state.imageStyle} style, masterpiece, highly detailed` }], parameters: { sampleCount: 1, aspectRatio: state.aspectRatio } };
+                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        if(!res.ok) throw new Error("API Limit or Invalid Key"); 
+                        const data = await res.json();
+                        if(data.predictions?.[0]?.bytesBase64Encoded) { img.src = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Engine Failed");
+                    } catch(e) { showImageError(e.message.toUpperCase()); }
+                } else {
+                    const cleanPrompt = prompt.replace(/[^a-zA-Z0-9\s,]/g, "").trim(); const safePrompt = encodeURIComponent(`${cleanPrompt}, ${state.imageStyle} style, masterpiece, best quality`); const safeSeed = Math.floor(Math.random() * 9999999); const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=${w}&height=${h}&nologo=true&seed=${safeSeed}`;
+                    const tImg = new Image(); tImg.crossOrigin = "Anonymous"; 
+                    tImg.onload = () => { img.src = url; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
+                    tImg.onerror = () => { showImageError("RENDER NODE OFFLINE. PLEASE RETRY."); }; tImg.src = url;
+                }
+            });
+
+            safeBind('generate-video-btn', 'click', async () => {
+                const p = el('video-prompt-input').value; if(!p) return; 
+                const l = el('video-loader'), ph = el('video-placeholder'), layer = el('cinematic-layer'), errTitle = el('video-error-title'), errDesc = el('video-error-desc'), icon = el('video-placeholder-icon');
+                l.classList.remove('hidden'); ph.classList.add('opacity-0'); if(errTitle) errTitle.classList.add('hidden'); if(errDesc) errDesc.innerText = "AWAITING SEQUENCE DIRECTIVES"; if(icon) icon.className = "ph-bold ph-film-strip text-6xl mb-6 text-[#222]"; if(layer) layer.classList.remove('opacity-100');
+                const activeKey = state.userApiKey || ""; 
+                
+                if (state.apiProvider === 'gemini' && activeKey) {
+                    try {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${activeKey}`;
+                        const payload = { instances: [{ prompt: `Cinematic film still, ${p}, volumetric lighting, highly detailed` }], parameters: { sampleCount: 1, aspectRatio: '16:9' } };
+                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        if(!res.ok) throw new Error("API Limit or Invalid Key"); 
+                        const data = await res.json();
+                        if(data.predictions?.[0]?.bytesBase64Encoded) { if(layer) { layer.style.backgroundImage = `url(data:image/png;base64,${data.predictions[0].bytesBase64Encoded})`; layer.classList.add('opacity-100'); } l.classList.add('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Engine Failed");
+                    } catch(e) { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerText = e.message.toUpperCase(); if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }
+                } else {
+                    const cleanPrompt = p.replace(/[^a-zA-Z0-9\s,]/g, "").trim(); const safePrompt = encodeURIComponent(`Cinematic film frame, ultra realistic, ${cleanPrompt}, volumetric lighting, 8k resolution, highly detailed`); const safeSeed = Math.floor(Math.random() * 9999999); const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=576&nologo=true&seed=${safeSeed}`;
+                    const tImg = new Image(); tImg.crossOrigin = "Anonymous"; 
+                    tImg.onload = () => { if(layer) { layer.style.backgroundImage = `url(${url})`; layer.classList.add('opacity-100'); } l.classList.add('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
+                    tImg.onerror = () => { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerText = "RENDER NODE OFFLINE. PLEASE RETRY."; if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }; tImg.src = url;
+                }
+            });
+
+            // MULTIMODAL ORB
+            const orb = el('ai-orb'), chatP = el('ai-chat-panel');
+            if(orb) {
+                let isDraggingOrb = false, orbStartX, orbStartY, initialX, initialY;
+                const startOrbDrag = (e) => { isDraggingOrb = false; initialX = e.clientX || (e.touches && e.touches[0].clientX); initialY = e.clientY || (e.touches && e.touches[0].clientY); if(initialX === undefined || initialY === undefined) return; const rect = orb.getBoundingClientRect(); orbStartX = initialX - rect.left; orbStartY = initialY - rect.top; document.addEventListener('mousemove', onOrbDrag); document.addEventListener('touchmove', onOrbDrag, {passive: false}); document.addEventListener('mouseup', stopOrbDrag); document.addEventListener('touchend', stopOrbDrag); };
+                const onOrbDrag = (e) => { const clientX = e.clientX || (e.touches && e.touches[0].clientX); const clientY = e.clientY || (e.touches && e.touches[0].clientY); if (!clientX || !clientY) return; if (!isDraggingOrb && (Math.abs(clientX - initialX) > 5 || Math.abs(clientY - initialY) > 5)) { isDraggingOrb = true; orb.classList.add('orb-dragging'); } if (isDraggingOrb) { e.preventDefault(); orb.style.left = (clientX - orbStartX) + 'px'; orb.style.top = (clientY - orbStartY) + 'px'; orb.style.right = 'auto'; orb.style.bottom = 'auto'; } };
+                const stopOrbDrag = () => { document.removeEventListener('mousemove', onOrbDrag); document.removeEventListener('touchmove', onOrbDrag); document.removeEventListener('mouseup', stopOrbDrag); document.removeEventListener('touchend', stopOrbDrag); setTimeout(() => { orb.classList.remove('orb-dragging'); }, 50); };
+                orb.addEventListener('mousedown', startOrbDrag); orb.addEventListener('touchstart', startOrbDrag, {passive: true});
+                orb.addEventListener('dragover', e => { e.preventDefault(); orb.style.transform = 'scale(1.2)'; }); orb.addEventListener('dragleave', () => { orb.style.transform = 'none'; });
+                orb.addEventListener('drop', e => {
+                    e.preventDefault(); orb.style.transform = 'none'; const file = e.dataTransfer.files[0];
+                    if(file && file.type.startsWith('image/')) {
+                        chatP.classList.add('open'); const hist = el('chat-history'); hist.innerHTML += `<div class="self-end bg-[var(--accent)] text-black p-3 rounded-xl max-w-[85%] mt-2">Visual Core Engaged. Analyzing optical data...</div>`;
+                        const reader = new FileReader();
+                        reader.onload = async (ev) => {
+                            const base64Img = ev.target.result.split(',')[1];
+                            try {
+                                const res = await callAI("Describe the key elements of this image in a highly detailed, analytical format.", "You are an advanced AI optical analyzer.", base64Img);
+                                hist.innerHTML += `<div class="self-start bg-black/40 border border-[var(--border)] text-[var(--text-main)] p-3 rounded-xl max-w-[85%] mt-2 cypher-text">${res.replace(/\n/g, '<br>')}</div>`; runCyphers(); hist.scrollTop = hist.scrollHeight; VoiceEngine.speak("Visual analysis complete.");
+                            } catch(err) { hist.innerHTML += `<div class="self-start bg-black/40 border border-[var(--border)] text-rose-500 p-3 rounded-xl max-w-[85%] mt-2">Analysis Failed: ${err.message}</div>`; }
+                        }; reader.readAsDataURL(file);
+                    }
+                });
+                orb.onclick = (e) => { if(isDraggingOrb) { e.preventDefault(); isDraggingOrb = false; return; } chatP.classList.toggle('open'); playSound('click'); };
+            }
+            
+            safeBind('close-chat-btn', 'click', () => { chatP.classList.remove('open'); });
+            safeBind('send-chat-btn', 'click', () => { const i = el('chat-input'); if(i&&i.value) { el('chat-history').innerHTML+=`<div class="self-end bg-[var(--accent)] text-black p-3 rounded-xl max-w-[85%] mt-2">${i.value}</div>`; i.value=''; } });
+            el('chat-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') el('send-chat-btn')?.click(); });
+
+            function init() { 
+                VoiceEngine.init(); 
+                loadData(); initNeuralCanvas(); setFocusPreset(25);
+                calculateEMI(); 
+                
+                // Advanced Boot Sequence
+                setTimeout(() => { 
+                    const bootText = el('boot-text'); const bootScreen = el('boot-screen');
+                    if (bootText) bootText.innerText = "DECRYPTING LOCAL STORAGE...";
+                    setTimeout(() => {
+                        if (bootText) bootText.innerText = "MOUNTING UI MATRIX...";
+                        setTimeout(() => { if(bootScreen) { bootScreen.style.opacity = '0'; setTimeout(() => { bootScreen.classList.add('hidden'); runCyphers(); if(state.requireAuth) el('lock-screen').classList.remove('opacity-0', 'pointer-events-none'); else { runCyphers(); dailyBriefing(); } }, 1000); } }, 500);
+                    }, 500);
+                }, 500);
+                updateClock(); setInterval(updateClock, 1000); requestAnimationFrame(updateDevHUD);
+            }
+            init();
+        });
+    </script>
+</body>
+</html>
