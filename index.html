@@ -376,9 +376,9 @@
                     
                     <div class="studio-card p-8 border-l-4 border-l-yellow-400 flex flex-col justify-between">
                         <div>
-                            <h3 class="text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph-fill ph-calendar text-yellow-400"></i> Local Time Sync</h3>
-                            <input id="auspicious-location-input" type="text" value="" placeholder="Enter City (e.g., Tokyo)" class="w-full bg-[#050505] border-[#222] border rounded-xl px-5 py-4 text-sm outline-none focus:border-[var(--accent)] mb-4 text-[var(--text-main)] transition-colors placeholder-gray-600">
-                            <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-4">Location Matrix Data</p>
+                            <h3 class="text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2"><i class="ph-fill ph-star text-yellow-400"></i> Auspicious Timings</h3>
+                            <input id="auspicious-location-input" type="text" value="" placeholder="Enter City (e.g., Hyderabad)" class="w-full bg-[#050505] border-[#222] border rounded-xl px-5 py-4 text-sm outline-none focus:border-[var(--accent)] mb-4 text-[var(--text-main)] transition-colors placeholder-gray-600">
+                            <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-4">Panchang Matrix Data</p>
                         </div>
                         <button id="get-auspicious-timings-btn" class="w-full bg-yellow-400 text-black font-black py-4 rounded-xl text-xs tracking-widest hover:brightness-110 transition shadow-lg focus:outline-none">CHECK TIMINGS</button>
                     </div>
@@ -1231,6 +1231,18 @@
                 reader.readAsText(file);
             });
 
+            let resetArmed = false;
+            safeBind('factory-reset-btn', 'click', () => {
+                const btn = el('factory-reset-btn');
+                if(!resetArmed) {
+                    resetArmed = true; if(state.enableSound) playSound('disconnect');
+                    btn.innerHTML = '<i class="ph-bold ph-warning text-lg"></i> CLICK AGAIN TO CONFIRM PURGE'; btn.classList.add('bg-rose-600', 'text-white');
+                    setTimeout(() => { resetArmed = false; btn.innerHTML = '<i class="ph-bold ph-warning text-lg"></i> FORMAT SYSTEM (FACTORY RESET)'; btn.classList.remove('bg-rose-600', 'text-white'); }, 3000);
+                } else {
+                    localStorage.removeItem('compassData_FINAL'); window.location.reload();
+                }
+            });
+
             safeBind('biometric-unlock-btn', 'click', async () => {
                 if(!state.biometricsEnabled || !window.PublicKeyCredential) { showToast("Biometrics not enrolled. Use PIN.", "error"); return; }
                 try { const credential = await navigator.credentials.get({ publicKey: { challenge: new Uint8Array(32), timeout: 60000 } }); if (credential) { initAudio(); playSound('connect'); el('lock-screen').classList.add('hidden'); runCyphers(); dailyBriefing(true); } } 
@@ -1250,6 +1262,9 @@
                 if(!pagesDOM[pageId]) return; Object.values(pagesDOM).forEach(p => { if(p) p.classList.add('hidden'); }); pagesDOM[pageId].classList.remove('hidden');
                 document.querySelectorAll('.sidebar-nav-item').forEach(l => l.classList.remove('active')); const link = document.querySelector(`.sidebar-nav-item[data-page="${pageId}"]`); if(link) link.classList.add('active');
                 state.activePage = pageId; runCyphers(); if(pageId === 'nexus') setTimeout(renderNexusHeatmap, 50);
+                
+                // UX FIX: Automatically close the mobile menu after clicking a link
+                if (window.innerWidth < 1024) { const nav = el('sidebar'), ov = el('mobile-overlay'); if(nav && !nav.classList.contains('-translate-x-full')) { nav.classList.add('-translate-x-full'); ov.classList.add('hidden'); } }
             };
             document.querySelectorAll('.sidebar-nav-item').forEach(l => { l.addEventListener('click', e => { e.preventDefault(); playSound('click'); switchPage(l.dataset.page); }); });
             
@@ -1257,6 +1272,7 @@
             window.toggleMobileNav = () => { const nav = el('sidebar'), ov = el('mobile-overlay'); if(nav && ov) { nav.classList.toggle('-translate-x-full'); ov.classList.toggle('hidden'); } };
             safeBind('mobile-menu-close-btn', 'click', window.toggleMobileNav);
             safeBind('mobile-menu-btn', 'click', window.toggleMobileNav);
+            safeBind('mobile-overlay', 'click', window.toggleMobileNav); // QA FIX: Close menu when clicking the dark background
             
             window.toggleCmdPalette = () => { const p = el('cmd-palette'), i = el('cmd-input'); if(p) { p.classList.toggle('opacity-0'); p.classList.toggle('pointer-events-none'); if(!p.classList.contains('opacity-0') && i) { i.value = ''; setTimeout(()=>i.focus(), 100); } } };
             safeBind('sidebar-cmd-btn', 'click', window.toggleCmdPalette);
@@ -1304,14 +1320,25 @@
 
             // DASHBOARD TRACKER BINDINGS
             safeBind('get-auspicious-timings-btn', 'click', () => {
+                const loc = el('auspicious-location-input').value.trim();
+                if(!loc) { showToast("Enter a city first", "error"); if(state.enableSound) playSound('disconnect'); return; }
                 const btn = el('get-auspicious-timings-btn'); const orig = btn.innerText;
                 btn.innerText = 'CALCULATING...'; if (state.enableSound) playSound('click');
-                setTimeout(() => { btn.innerText = orig; showToast("Matrix synchronizing...", "info"); }, 1000);
+                setTimeout(() => { 
+                    btn.innerText = orig; 
+                    window.openExternalLink(`https://www.google.com/search?q=today+panchang+and+auspicious+timings+in+${encodeURIComponent(loc)}`);
+                }, 600);
             });
+            
             safeBind('get-gold-rates-btn', 'click', () => {
+                const loc = el('location-input').value.trim();
+                if(!loc) { showToast("Enter a city first", "error"); if(state.enableSound) playSound('disconnect'); return; }
                 const btn = el('get-gold-rates-btn'); const orig = btn.innerText;
                 btn.innerText = 'FETCHING...'; if (state.enableSound) playSound('click');
-                setTimeout(() => { btn.innerText = orig; showToast("Market data requested...", "info"); }, 1000);
+                setTimeout(() => { 
+                    btn.innerText = orig; 
+                    window.openExternalLink(`https://www.google.com/search?q=current+gold+and+silver+rates+in+${encodeURIComponent(loc)}`);
+                }, 600);
             });
 
             function updateClock() {
@@ -1597,7 +1624,14 @@
             el('new-okr-input')?.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleAddOKR(); });
             
             safeBind('deploy-swarm-btn', 'click', async () => {
+                const btn = el('deploy-swarm-btn'); if(btn.disabled) return;
                 const d = el('swarm-directive-input').value; if(!d) return; 
+                
+                // UX FIX: Lock button to prevent API spam
+                btn.disabled = true; const origHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="ph-bold ph-spinner animate-spin text-lg"></i> SWARM ACTIVE...';
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+
                 ['data','sec','ops'].forEach(n => { const elNode = el(`swarm-out-${n}`); elNode.innerHTML = ''; elNode.classList.add('typing-cursor'); elNode.innerText = 'Awaiting connection...'; }); 
                 state.nexusData[363]+=3; saveData(); renderNexusHeatmap();
                 try {
@@ -1611,7 +1645,12 @@
                     const r3 = await callAI(d, "Execution Node. Give a 3 step plan. Use plain text without markdown.");
                     await typeWriter(el('swarm-out-ops'), r3.replace(/<[^>]*>/gm, ''));
                     showToast("Swarm Execution Complete");
-                } catch(e) { ['data','sec','ops'].forEach(n => el(`swarm-out-${n}`).innerHTML = renderAIErrorUI("Node Offline", e.message)); }
+                } catch(e) { 
+                    ['data','sec','ops'].forEach(n => el(`swarm-out-${n}`).innerHTML = renderAIErrorUI("Node Offline", e.message)); 
+                } finally {
+                    // Unlock button
+                    btn.disabled = false; btn.innerHTML = origHTML; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             });
 
             // STUDIO CONTROLS
@@ -1657,6 +1696,8 @@
                 const prompt = el('image-prompt-input').value; if(!prompt) return; 
                 const img = el('generated-image'), l = el('image-loader'), ph = el('image-placeholder'), errTitle = el('image-error-title'), errDesc = el('image-error-desc'), icon = el('image-placeholder-icon');
                 l.classList.remove('hidden'); ph.classList.add('opacity-0'); img.classList.add('hidden'); if(errTitle) errTitle.classList.add('hidden'); if(errDesc) errDesc.innerText = "AWAITING VISUAL DIRECTIVES"; if(icon) icon.className = "ph-bold ph-image text-6xl mb-6 text-[#222]";
+                el('download-image-btn')?.classList.add('hidden'); // QA FIX: Hide download button during new generation
+                
                 let w = 1024, h = 1024; if(state.aspectRatio === '16:9') { h = 576; } else if(state.aspectRatio === '9:16') { w = 576; }
                 const activeKey = state.userApiKey || "";
                 
@@ -1665,7 +1706,7 @@
                         const res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` }, body: JSON.stringify({ model: 'dall-e-3', prompt: `${prompt}, ${state.imageStyle} style, masterpiece`, n: 1, size: "1024x1024" }) });
                         if(!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "DALL-E API Error"); }
                         const data = await res.json();
-                        if(data.data?.[0]?.url) { img.src = data.data[0].url; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Failed");
+                        if(data.data?.[0]?.url) { img.src = data.data[0].url; img.classList.remove('hidden'); l.classList.add('hidden'); el('download-image-btn')?.classList.remove('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Failed");
                     } catch(e) { showImageError(e.message.toUpperCase()); }
                 } 
                 else if (state.apiProvider === 'gemini' && activeKey) {
@@ -1675,38 +1716,44 @@
                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         if(!res.ok) throw new Error("API Limit or Invalid Key"); 
                         const data = await res.json();
-                        if(data.predictions?.[0]?.bytesBase64Encoded) { img.src = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Engine Failed");
+                        if(data.predictions?.[0]?.bytesBase64Encoded) { img.src = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`; img.classList.remove('hidden'); l.classList.add('hidden'); el('download-image-btn')?.classList.remove('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Engine Failed");
                     } catch(e) { showImageError(e.message.toUpperCase()); }
                 } else {
                     const cleanPrompt = prompt.replace(/[^a-zA-Z0-9\s,]/g, "").trim(); const safePrompt = encodeURIComponent(`${cleanPrompt}, ${state.imageStyle} style, masterpiece, best quality`); const safeSeed = Math.floor(Math.random() * 9999999); const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=${w}&height=${h}&nologo=true&seed=${safeSeed}`;
                     const tImg = new Image(); tImg.crossOrigin = "Anonymous"; 
-                    tImg.onload = () => { img.src = url; img.classList.remove('hidden'); l.classList.add('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
-                    tImg.onerror = () => { showImageError("RENDER NODE OFFLINE. PLEASE RETRY."); }; tImg.src = url;
-                }
-            });
-
-            safeBind('generate-video-btn', 'click', async () => {
-                const p = el('video-prompt-input').value; if(!p) return; 
-                const l = el('video-loader'), ph = el('video-placeholder'), layer = el('cinematic-layer'), errTitle = el('video-error-title'), errDesc = el('video-error-desc'), icon = el('video-placeholder-icon');
-                l.classList.remove('hidden'); ph.classList.add('opacity-0'); if(errTitle) errTitle.classList.add('hidden'); if(errDesc) errDesc.innerText = "AWAITING SEQUENCE DIRECTIVES"; if(icon) icon.className = "ph-bold ph-film-strip text-6xl mb-6 text-[#222]"; if(layer) layer.classList.remove('opacity-100');
-                const activeKey = state.userApiKey || ""; 
-                
-                if (state.apiProvider === 'gemini' && activeKey) {
-                    try {
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${activeKey}`;
-                        const payload = { instances: [{ prompt: `Cinematic film still, ${p}, volumetric lighting, highly detailed` }], parameters: { sampleCount: 1, aspectRatio: '16:9' } };
-                        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                        if(!res.ok) throw new Error("API Limit or Invalid Key"); 
-                        const data = await res.json();
-                        if(data.predictions?.[0]?.bytesBase64Encoded) { if(layer) { layer.style.backgroundImage = `url(data:image/png;base64,${data.predictions[0].bytesBase64Encoded})`; layer.classList.add('opacity-100'); } l.classList.add('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Engine Failed");
-                    } catch(e) { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerText = e.message.toUpperCase(); if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }
-                } else {
-                    const cleanPrompt = p.replace(/[^a-zA-Z0-9\s,]/g, "").trim(); const safePrompt = encodeURIComponent(`Cinematic film frame, ultra realistic, ${cleanPrompt}, volumetric lighting, 8k resolution, highly detailed`); const safeSeed = Math.floor(Math.random() * 9999999); const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=576&nologo=true&seed=${safeSeed}`;
-                    const tImg = new Image(); tImg.crossOrigin = "Anonymous"; 
-                    tImg.onload = () => { if(layer) { layer.style.backgroundImage = `url(${url})`; layer.classList.add('opacity-100'); } l.classList.add('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
+                    // QA FIX: Correctly target img.src and the correct download button
+                    tImg.onload = () => { img.src = url; img.classList.remove('hidden'); l.classList.add('hidden'); el('download-image-btn')?.classList.remove('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
                     tImg.onerror = () => { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerText = "RENDER NODE OFFLINE. PLEASE RETRY."; if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }; tImg.src = url;
                 }
             });
+
+            // QA FIX: Adding the missing Cinematic Render Logic
+            safeBind('generate-video-btn', 'click', async () => {
+                const prompt = el('video-prompt-input').value; if(!prompt) return;
+                const layer = el('cinematic-layer'), l = el('video-loader'), ph = el('video-placeholder'), errTitle = el('video-error-title'), errDesc = el('video-error-desc'), icon = el('video-placeholder-icon');
+                l.classList.remove('hidden'); ph.classList.add('opacity-0'); layer.classList.remove('opacity-100'); if(errTitle) errTitle.classList.add('hidden'); if(errDesc) errDesc.innerText = "AWAITING SEQUENCE DIRECTIVES"; if(icon) icon.className = "ph-bold ph-film-strip text-6xl mb-6 text-[#222]";
+                el('download-video-btn')?.classList.add('hidden');
+                
+                const activeKey = state.userApiKey || "";
+                
+                if (state.apiProvider === 'openai' && activeKey) {
+                    try {
+                        const res = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeKey}` }, body: JSON.stringify({ model: 'dall-e-3', prompt: `${prompt}, cinematic lighting, 35mm lens, dynamic motion blur, ultra-detailed, 8k resolution, masterpiece`, n: 1, size: "1024x1024" }) });
+                        if(!res.ok) { const err = await res.json(); throw new Error(err.error?.message || "API Error"); }
+                        const data = await res.json();
+                        if(data.data?.[0]?.url) { layer.style.backgroundImage = `url(${data.data[0].url})`; layer.classList.add('opacity-100'); l.classList.add('hidden'); el('download-video-btn')?.classList.remove('hidden'); state.nexusData[363]++; renderNexusHeatmap(); saveData(); playSound('connect'); } else throw new Error("Render Failed");
+                    } catch(e) { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerHTML = e.message.toUpperCase(); if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }
+                } else {
+                    const cleanPrompt = prompt.replace(/[^a-zA-Z0-9\s,]/g, "").trim(); const safePrompt = encodeURIComponent(`${cleanPrompt}, cinematic lighting, 35mm lens, motion blur, masterpiece`); const safeSeed = Math.floor(Math.random() * 9999999); const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=576&nologo=true&seed=${safeSeed}`;
+                    const tImg = new Image(); tImg.crossOrigin = "Anonymous"; 
+                    tImg.onload = () => { layer.style.backgroundImage = `url(${url})`; layer.classList.add('opacity-100'); l.classList.add('hidden'); el('download-video-btn')?.classList.remove('hidden'); state.nexusData[363]+=2; renderNexusHeatmap(); saveData(); playSound('connect'); }; 
+                    tImg.onerror = () => { l.classList.add('hidden'); ph.classList.remove('opacity-0'); if(errTitle) errTitle.classList.remove('hidden'); if(errDesc) errDesc.innerText = "RENDER NODE OFFLINE. PLEASE RETRY."; if(icon) icon.className = "ph-bold ph-warning-circle text-6xl mb-6 text-rose-500"; playSound('disconnect'); }; tImg.src = url;
+                }
+            });
+
+            // STUDIO DOWNLOAD LOGIC
+            safeBind('download-image-btn', 'click', () => { const src = el('generated-image')?.src; if(src) { const a = document.createElement('a'); a.href = src; a.download = `compass_visual_${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); if(state.enableSound) playSound('connect'); showToast("Visual Exported"); } });
+            safeBind('download-video-btn', 'click', () => { const bg = el('cinematic-layer')?.style.backgroundImage; if(bg && bg !== 'none') { const src = bg.replace(/^url\(["']?/, '').replace(/["']?\)$/, ''); const a = document.createElement('a'); a.href = src; a.download = `compass_frame_${Date.now()}.png`; document.body.appendChild(a); a.click(); document.body.removeChild(a); if(state.enableSound) playSound('connect'); showToast("Frame Exported"); } });
 
             // MULTIMODAL ORB
             const orb = el('ai-orb'), chatP = el('ai-chat-panel');
